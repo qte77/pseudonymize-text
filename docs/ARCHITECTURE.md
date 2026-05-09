@@ -82,14 +82,9 @@ Makefile            # setup / run / test / lint
            ▼
 ┌────────────────────────────────────────────────────────────────────┐
 │  mapping.py — pseudonymize-mapping.json (next to, not inside, out/)│
-│    {                                                               │
-│      "<NAME:7f3a9c8b…>": {                                         │
-│        "value": "Alice Müller",                                    │
-│        "type":  "name",                                            │
-│        "id":    "p1"                                               │
-│      },                                                            │
-│      ...                                                           │
-│    }                                                               │
+│    JSON: { token → record }                                        │
+│    See HASHING.md §10 for the normative schema (value, canonical,  │
+│    type, id, first_seen, last_seen, occurrences).                  │
 └────────────────────────────────────────────────────────────────────┘
 ```
 
