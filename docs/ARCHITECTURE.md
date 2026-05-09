@@ -15,7 +15,7 @@
 ## Module Layout
 
 ```text
-src/pseudonymize/
+src/pseudonymize_text/
   cli.py            # argparse entry; detect / apply subcommands
   walker.py         # mirror in/ → out/, extension whitelist
   detectors/
@@ -187,7 +187,7 @@ This guarantees a curated `terms.csv` entry always overrides a structured or NER
 
 ## Extension Points
 
-- **New entity type** → add a detector in `src/pseudonymize/detectors/`, register its enum value, expose in `--detectors`.
+- **New entity type** → add a detector in `src/pseudonymize_text/detectors/`, register its enum value, expose in `--detectors`.
 - **New file type** (PDF, docx — deferred) → add a reader/writer to `walker.py`; pipeline downstream is unchanged.
 - **Embedded use** → import `pseudonymize.replacer.transform(text, config) -> (text, mapping_delta)` (public API, deferred to v1.1).
 
