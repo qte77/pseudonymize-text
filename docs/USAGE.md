@@ -2,7 +2,7 @@
 
 ## Subcommands
 
-```
+```text
 pseudonymize detect <in_dir>          [opts]   # report only; no writes to in/ or out/
 pseudonymize apply  <in_dir> <out_dir> [opts]  # detect (or load --plan) and write
 ```

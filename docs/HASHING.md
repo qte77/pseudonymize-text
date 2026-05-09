@@ -8,7 +8,7 @@ Construction, input canonicalization, namespacing, and stability of the hash-der
 
 ## 1. Construction
 
-```
+```text
 token = "<" + TYPE + ":" + hex(HMAC-SHA256(K, M)[:16]) + ">"
 
 where:
@@ -23,6 +23,7 @@ where:
 `hex(...)` is lowercase. Truncation is the **first 16 bytes** of the MAC output (128 bits → 32 hex chars).
 
 References:
+
 - HMAC: [RFC 2104](https://www.rfc-editor.org/rfc/rfc2104)
 - SHA-256: [NIST FIPS 180-4](https://csrc.nist.gov/pubs/fips/180-4/upd1/final)
 - Truncation rationale: [NIST SP 800-107r1 §5.1](https://nvlpubs.nist.gov/nistpubs/legacy/sp/nistspecialpublication800-107r1.pdf)

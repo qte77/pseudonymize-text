@@ -101,7 +101,7 @@ Escape a literal `*` or `?` with a backslash: `\*`, `\?`.
 
 By default each unique match gets its **own** token:
 
-```
+```text
 *@acme.com  →  alice@acme.com → <EMAIL:7f3a…>
             →  bob@acme.com   → <EMAIL:1c4d…>
 ```
@@ -112,7 +112,8 @@ If the row has an `id`, **all** matches collapse to one token:
 id,value,type
 acme,*@acme.com,email
 ```
-```
+
+```text
 *@acme.com  →  alice@acme.com → <EMAIL:9b21…>
             →  bob@acme.com   → <EMAIL:9b21…>   # same id → same token
 ```

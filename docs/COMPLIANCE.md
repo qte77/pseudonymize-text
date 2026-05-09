@@ -12,15 +12,15 @@ This document maps design decisions to the regulatory requirements they satisfy.
 
 | Source | Relevance |
 |---|---|
-| GDPR Art. 4(5) | Definition of pseudonymization. https://eur-lex.europa.eu/eli/reg/2016/679/oj |
-| EDPB Guidelines 01/2025 on pseudonymisation | Current EU supervisory guidance. https://www.edpb.europa.eu/system/files/2025-01/edpb_guidelines_202501_pseudonymisation_en.pdf |
-| ENISA — *Pseudonymisation Techniques and Best Practices* | Technique catalogue and recommendations. https://www.enisa.europa.eu/sites/default/files/publications/Guidelines%20on%20shaping%20technology%20according%20to%20GDPR%20provisions.pdf |
-| ENISA — *Data Pseudonymisation: Advanced Techniques & Use Cases* | Advanced techniques (HMAC, secret sharing). https://www.enisa.europa.eu/sites/default/files/publications/ENISA%20Report%20-%20Data%20Pseudonymisation%20-%20Advanced%20Techniques%20and%20Use%20Cases.pdf |
-| EDPS / AEPD — *Hash function as personal data pseudonymisation technique* | Why plain hashing of small input spaces is insufficient. https://www.edps.europa.eu/sites/default/files/publication/19-10-30_aepd-edps_paper_hash_final_en.pdf |
-| NIST SP 800-188 | De-identification of government datasets; governance framing. https://csrc.nist.gov/pubs/sp/800/188/final |
-| NIST SP 800-107 Rev. 1 | Hash truncation rationale (collision resistance halved). https://nvlpubs.nist.gov/nistpubs/legacy/sp/nistspecialpublication800-107r1.pdf |
-| NIST FIPS 180-4 | SHA-256 specification. https://csrc.nist.gov/pubs/fips/180-4/upd1/final |
-| IETF RFC 2104 | HMAC construction. https://www.rfc-editor.org/rfc/rfc2104 |
+| GDPR Art. 4(5) | Definition of pseudonymization. <https://eur-lex.europa.eu/eli/reg/2016/679/oj> |
+| EDPB Guidelines 01/2025 on pseudonymisation | Current EU supervisory guidance. <https://www.edpb.europa.eu/system/files/2025-01/edpb_guidelines_202501_pseudonymisation_en.pdf> |
+| ENISA — *Pseudonymisation Techniques and Best Practices* | Technique catalogue and recommendations. <https://www.enisa.europa.eu/sites/default/files/publications/Guidelines%20on%20shaping%20technology%20according%20to%20GDPR%20provisions.pdf> |
+| ENISA — *Data Pseudonymisation: Advanced Techniques & Use Cases* | Advanced techniques (HMAC, secret sharing). <https://www.enisa.europa.eu/sites/default/files/publications/ENISA%20Report%20-%20Data%20Pseudonymisation%20-%20Advanced%20Techniques%20and%20Use%20Cases.pdf> |
+| EDPS / AEPD — *Hash function as personal data pseudonymisation technique* | Why plain hashing of small input spaces is insufficient. <https://www.edps.europa.eu/sites/default/files/publication/19-10-30_aepd-edps_paper_hash_final_en.pdf> |
+| NIST SP 800-188 | De-identification of government datasets; governance framing. <https://csrc.nist.gov/pubs/sp/800/188/final> |
+| NIST SP 800-107 Rev. 1 | Hash truncation rationale (collision resistance halved). <https://nvlpubs.nist.gov/nistpubs/legacy/sp/nistspecialpublication800-107r1.pdf> |
+| NIST FIPS 180-4 | SHA-256 specification. <https://csrc.nist.gov/pubs/fips/180-4/upd1/final> |
+| IETF RFC 2104 | HMAC construction. <https://www.rfc-editor.org/rfc/rfc2104> |
 
 ## Requirements satisfied
 
@@ -45,7 +45,7 @@ Plain SHA-256 over a closed input space (e.g. names from a finite list) is brute
 
 The HMAC key is namespaced per entity type:
 
-```
+```text
 token = "<" + TYPE + ":" + HMAC(key || ":" || type, kind || ":" || subject)[:16].hex() + ">"
 ```
 

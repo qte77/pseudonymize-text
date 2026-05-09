@@ -4,17 +4,17 @@
 
 | Layer | Choice | Reference |
 |---|---|---|
-| Language | Python ≥ 3.11 | https://docs.python.org/3/ |
-| Detection — structured IDs | `python-stdnum` (IBAN mod-97, CC Luhn) | https://arthurdejong.org/python-stdnum/ |
-| Detection — phone | `phonenumberslite` (port of Google libphonenumber) | https://pypi.org/project/phonenumberslite/ · https://github.com/google/libphonenumber |
-| Detection — NER (optional) | spaCy + `xx_ent_wiki_sm` (~12 MB, multilingual) | https://spacy.io/models |
-| Tokenization | stdlib `hmac` + `hashlib` (SHA-256) | https://docs.python.org/3/library/hmac.html · https://www.rfc-editor.org/rfc/rfc2104 · https://csrc.nist.gov/pubs/fips/180-4/upd1/final |
-| Packaging | `pyproject.toml` (PEP 517/518) | https://packaging.python.org/en/latest/specifications/pyproject-toml/ |
-| Tests | `pytest` | https://docs.pytest.org/ |
+| Language | Python ≥ 3.11 | <https://docs.python.org/3/> |
+| Detection — structured IDs | `python-stdnum` (IBAN mod-97, CC Luhn) | <https://arthurdejong.org/python-stdnum/> |
+| Detection — phone | `phonenumberslite` (port of Google libphonenumber) | <https://pypi.org/project/phonenumberslite/> · <https://github.com/google/libphonenumber> |
+| Detection — NER (optional) | spaCy + `xx_ent_wiki_sm` (~12 MB, multilingual) | <https://spacy.io/models> |
+| Tokenization | stdlib `hmac` + `hashlib` (SHA-256) | <https://docs.python.org/3/library/hmac.html> · <https://www.rfc-editor.org/rfc/rfc2104> · <https://csrc.nist.gov/pubs/fips/180-4/upd1/final> |
+| Packaging | `pyproject.toml` (PEP 517/518) | <https://packaging.python.org/en/latest/specifications/pyproject-toml/> |
+| Tests | `pytest` | <https://docs.pytest.org/> |
 
 ## Module Layout
 
-```
+```text
 src/pseudonymize/
   cli.py            # argparse entry; detect / apply subcommands
   walker.py         # mirror in/ → out/, extension whitelist
@@ -33,7 +33,7 @@ Makefile            # setup / run / test / lint
 
 ## Data Flow
 
-```
+```text
 ┌────────────────────────────────────────────────────────────────────┐
 │  CLI (cli.py)                                                      │
 │    detect <in>           --terms --detectors --ner --report …      │
@@ -105,7 +105,7 @@ Re-using the plan in `apply --plan` guarantees byte-identical output to what was
 
 ## Token Format
 
-```
+```text
 <TYPE:hexdigits>
 ```
 
@@ -113,7 +113,7 @@ Re-using the plan in `apply --plan` guarantees byte-identical output to what was
 - `hexdigits` = 32 lowercase hex characters = 128 bits.
 - Construction:
 
-  ```
+  ```text
   hexdigits = HMAC-SHA256(key || ":" || type, kind || ":" || subject)[:16].hex()
   ```
 

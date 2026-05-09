@@ -40,10 +40,10 @@ The design assumes the operator can keep at least the **mapping** (or the **key 
 
 | Choice | Value | Rationale |
 |---|---|---|
-| MAC | HMAC-SHA256 | RFC 2104; FIPS 180-4. https://www.rfc-editor.org/rfc/rfc2104 · https://csrc.nist.gov/pubs/fips/180-4/upd1/final |
+| MAC | HMAC-SHA256 | RFC 2104; FIPS 180-4. <https://www.rfc-editor.org/rfc/rfc2104> · <https://csrc.nist.gov/pubs/fips/180-4/upd1/final> |
 | Key length | 256 bits (32 bytes) | Matches HMAC-SHA256 block-aligned key; full output entropy. |
-| Per-type key namespacing | `key || ":" || type` | Prevents cross-field token correlation (ENISA Advanced §3.4). |
-| Truncation | 128 bits (32 hex) | NIST SP 800-107r1 §5.1: 64-bit collision resistance, sufficient for ≤10⁷ tokens. https://nvlpubs.nist.gov/nistpubs/legacy/sp/nistspecialpublication800-107r1.pdf |
+| Per-type key namespacing | `key \|\| ":" \|\| type` | Prevents cross-field token correlation (ENISA Advanced §3.4). |
+| Truncation | 128 bits (32 hex) | NIST SP 800-107r1 §5.1: 64-bit collision resistance, sufficient for ≤10⁷ tokens. <https://nvlpubs.nist.gov/nistpubs/legacy/sp/nistspecialpublication800-107r1.pdf> |
 | KDF for the secret | None (raw key) | The input space is not a password; HMAC's keyed PRF property is what we need. |
 
 We deliberately do **not** use bcrypt/argon2/PBKDF2: those defend against guessing a low-entropy password. Our threat is recovery of a plaintext from a token; the relevant defense is HMAC key secrecy plus enough output bits.
