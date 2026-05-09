@@ -1,5 +1,7 @@
 # Usage
 
+*For operators running the CLI.*
+
 ## Subcommands
 
 ```text

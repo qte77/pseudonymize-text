@@ -1,5 +1,7 @@
 # Terms File Schema
 
+*For anyone authoring or editing a term list.*
+
 The term list tells the **literal** and **pattern** detectors what to look for. Structured detectors (email, phone, IBAN, CC, SSN) and NER do not consult it.
 
 Two formats are supported: CSV (recommended) and JSON.
@@ -20,11 +22,11 @@ Extra columns are ignored.
 
 ```csv
 id,value,type
-p1,Alice Müller,name
-p1,Müller Alice,name
-p1,"Müller, Alice",name
-p1,A. Müller,name
-p1,alice.mueller@acme.com,email
+p1,John Doe,name
+p1,Doe John,name
+p1,"Doe, John",name
+p1,J. Doe,name
+p1,john.doe@acme.com,email
 p2,Bob Smith,name
 ,acme-corp,org
 ,*@acme.com,email
@@ -37,8 +39,8 @@ UTF-8, top-level array of objects with the same field names:
 
 ```json
 [
-  {"id": "p1", "value": "Alice Müller", "type": "name"},
-  {"id": "p1", "value": "Müller Alice", "type": "name"},
+  {"id": "p1", "value": "John Doe", "type": "name"},
+  {"id": "p1", "value": "Doe John", "type": "name"},
   {"value": "*@acme.com", "type": "email"}
 ]
 ```
@@ -64,9 +66,9 @@ Rows with the same `id` produce the **same** token. Use this to collapse known v
 
 ```csv
 id,value,type
-p1,Alice Müller,name
-p1,Müller Alice,name
-p1,A. Müller,name
+p1,John Doe,name
+p1,Doe John,name
+p1,J. Doe,name
 ```
 
 All three surface forms → `<NAME:7f3a9c8b…>` because the token is `HMAC(key||":name", "id:p1")` for every row in the group, regardless of `value`. See [ARCHITECTURE.md → Token Format](ARCHITECTURE.md#token-format) for the full construction.
@@ -128,14 +130,7 @@ This prevents silent over-substitution.
 
 ## Precedence
 
-When the same span is matched by multiple rules:
-
-1. **Literal beats pattern.** `alice@acme.com` listed explicitly overrides `*@acme.com`.
-2. **Longer match beats shorter.** `Alice Müller` overrides `Alice` and `Müller` separately.
-3. **Term list beats structured detector.** A row in `terms.csv` overrides what `structured.py` would emit for the same span.
-4. **Structured beats NER.** A regex-validated IBAN overrides any NER guess on the same span.
-
-See [ARCHITECTURE.md → Span Precedence](ARCHITECTURE.md#span-precedence-overlap-resolution-in-replacerpy).
+Literal beats pattern; longer match beats shorter; term list beats structured detector; structured beats NER. Full rules: [ARCHITECTURE.md → Span Precedence](ARCHITECTURE.md#span-precedence-overlap-resolution-in-replacerpy).
 
 ## Encoding & whitespace
 

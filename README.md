@@ -3,7 +3,7 @@
 Bulk-pseudonymize sensitive entities (names, emails, phones, IBANs, SSNs, credit cards, addresses, organizations) across a folder tree — deterministically and reversibly.
 
 - **Deterministic** — same input + same key → same token, every run, every machine.
-- **Reversible** by mapping-file lookup (v1 supports `jq` against the mapping JSON; a `pseudonymize reverse` subcommand is planned for v1.1). Mapping is kept separate from output and key.
+- **Reversible** via the mapping file (kept separate from output and key).
 - **GDPR/ENISA-aligned** — HMAC-SHA256 with secret key, namespaced per entity type; mapping and key never co-located with output. See [docs/COMPLIANCE.md](docs/COMPLIANCE.md).
 - **Lightweight** — Python stdlib + two small deps (`python-stdnum`, `phonenumberslite`). Optional spaCy NER via `[ner]` extra.
 - **Audit-first** — `detect` produces a JSONL plan; `apply` executes it byte-identically.
