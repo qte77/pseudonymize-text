@@ -49,22 +49,19 @@ Hashing the surface form would make `Alice`, `ALICE`, and `alice` produce three 
 
 ## 3. The `kind` prefix
 
-The MAC message is `kind || ":" || subject` where `kind` is `"id"` or `"v"`. This prefix exists to prevent a **construction collision** between an `id`-grouped row and a normal value row.
+The MAC message is `kind || ":" || subject` where `kind` is `"id"` or `"v"`. This prefix exists to disambiguate `id`-grouped subjects from raw value subjects — both can be arbitrary strings, and without the prefix they share a namespace.
 
-### The attack it prevents
+### The ambiguity it prevents
 
-Without the prefix, the MAC inputs would be just the `id` string or the canonical value. An adversary who controls `terms.csv` (or who can guess what's in it) could:
+Consider an operator who has `id="alice"` grouping several variants of person Alice. Separately, the term list (or a structured/NER detector) emits a span whose canonical form is the literal string `alice`. Without the prefix, both would hash to `HMAC(K, "alice")` and produce the same token — even though they refer to different things conceptually (one is a group label, one is a literal name occurrence).
 
-1. Observe that some operator uses `id="p1"` for a high-value entity (Alice).
-2. Add an unrelated row to a future term list: `value=p1, type=name`.
-3. After canonicalization (`p1` → `p1`), this row would produce the **same** token as Alice's group.
-4. Adversary now has token confusion across the corpus.
+With the prefix, the inputs become `b"id:alice"` vs `b"v:alice"`, which are distinct messages and produce distinct MACs. The two paths cannot collide.
 
-With the `kind` prefix, the MAC inputs become `b"id:p1"` vs `b"v:p1"`, which are different inputs and produce different MACs. No matter what value the adversary inserts, it cannot collide with any `id`-derived token.
+This is mostly a hygiene measure, not a defense against an attacker (an attacker who can write to `terms.csv` already controls how anything in the corpus gets pseudonymized). Its real value is preventing accidental confusion in normal use.
 
 ### Why the colon
 
-`":"` is forbidden in `kind` (the only legal values are `id` and `v`), so prefix-extension attacks like a value of `id:p1` collapsing to `b"v:id:p1"` ≠ `b"id:p1"` cannot collide either. The colon is a hard delimiter.
+`":"` is forbidden in `kind` (the only legal values are `id` and `v`), so a value subject that happens to start with `id:` (e.g. someone is pseudonymizing log lines containing literal text `id:p1`) becomes `b"v:id:p1"` — distinct from `b"id:p1"`. The colon is a hard delimiter.
 
 ---
 
@@ -99,7 +96,7 @@ The tool produces the **same token for the same input**, every run, every machin
 This is intentional, not an oversight:
 
 - **A random salt would destroy the only useful property** of pseudonymization at this layer — the ability to join across documents (e.g. "Alice appears in 47 logs"). Random salt → 47 different tokens → no join.
-- **The HMAC key plays the role of a "global salt"**, drawn once per installation and held secret. Brute force requires the key, not just the algorithm. This is the construction recommended by [ENISA Advanced Pseudonymisation §3](https://www.enisa.europa.eu/sites/default/files/publications/ENISA%20Report%20-%20Data%20Pseudonymisation%20-%20Advanced%20Techniques%20and%20Use%20Cases.pdf).
+- **The HMAC key plays the role of a "global salt"**, drawn once per installation and held secret. Brute force requires the key, not just the algorithm. HMAC-with-secret-key is endorsed as a valid pseudonymization technique by [ENISA — Data Pseudonymisation: Advanced Techniques & Use Cases](https://www.enisa.europa.eu/sites/default/files/publications/ENISA%20Report%20-%20Data%20Pseudonymisation%20-%20Advanced%20Techniques%20and%20Use%20Cases.pdf).
 - **No KDF (bcrypt/argon2/PBKDF2)** is applied to the key. Those defend against guessing a *low-entropy password*. Our threat is recovery of a plaintext from a token; the relevant defense is HMAC key secrecy and sufficient output bits, not CPU-hardening.
 
 If you ever want non-deterministic output (each occurrence gets a unique token, breaking joins), this is **not** the right tool — that is a different design (envelope encryption with random IVs).
@@ -114,14 +111,22 @@ We truncate HMAC-SHA256 to **128 bits** (16 bytes, 32 hex chars).
 |---|---|
 | MAC output | 256 bits |
 | Truncated output | 128 bits |
-| Collision resistance ([SP 800-107r1 §5.1](https://nvlpubs.nist.gov/nistpubs/legacy/sp/nistspecialpublication800-107r1.pdf)) | 64 bits |
-| Birthday-collision probability over 10⁶ tokens | ≈ 2.7 × 10⁻¹² |
-| Birthday-collision probability over 10⁷ tokens | ≈ 2.7 × 10⁻¹⁰ |
-| Birthday-collision probability over 10⁹ tokens | ≈ 2.7 × 10⁻⁶ |
+| Output space *N* | 2¹²⁸ ≈ 3.4 × 10³⁸ |
+| Collision resistance ([SP 800-107r1 §5.1](https://nvlpubs.nist.gov/nistpubs/legacy/sp/nistspecialpublication800-107r1.pdf)) | 64 bits (≈ 1.8 × 10¹⁹ tokens for 50% birthday-collision probability) |
 
-128 bits is the floor. Below 96 bits, collision probability becomes a real concern at corpus scale. Above 128 bits, tokens become noisy in plain text without buying meaningful collision resistance for any realistic corpus.
+Birthday-collision probability for *n* random tokens is approximately *n²* / (2*N*) = *n²* / 2¹²⁹:
 
-If your corpus exceeds ~10⁸ tokens, raise the truncation length (a v1.1 flag) rather than living with the collision risk.
+| Corpus size *n* | P(any collision) |
+|---|---|
+| 10⁶ | ≈ 1.5 × 10⁻²⁷ |
+| 10⁹ | ≈ 1.5 × 10⁻²¹ |
+| 10¹² | ≈ 1.5 × 10⁻¹⁵ |
+| 10¹⁵ | ≈ 1.5 × 10⁻⁹ |
+| 10¹⁸ | ≈ 1.5 × 10⁻³ (~0.15%) |
+
+128 bits is the floor. Below 96 bits, collision probability becomes a concern at corpus scale; above 128 bits, tokens become noisy in plain text without buying meaningful additional resistance for any realistic corpus.
+
+If your corpus exceeds ~10¹⁵ tokens, raise the truncation length (a v1.1 flag) rather than living with the collision risk.
 
 ---
 
@@ -144,24 +149,32 @@ What does and does not preserve token values:
 | Rename an `id` string | ❌ | Token derives from `id`. |
 | Rotate the HMAC key | ❌ | Intentional — see [SECURITY.md → Key rotation](SECURITY.md#key-rotation-procedure). |
 | Switch tool major version | ❌ unless release notes say otherwise | Canonicalization rules may evolve across majors. |
-| Switch `python-stdnum` / `phonenumberslite` versions | ✅ within a tool major version | See §8. |
+| Switch `python-stdnum` / `phonenumberslite` versions | ⚠️ | Canonical-to-token mapping unchanged, but **detection set may shift** (newly valid IBANs, re-classified phone numbers). See §8. |
+| Upgrade Python minor version | ⚠️ | ASCII inputs unaffected; unusual Unicode may shift (NFKC tables track the interpreter's Unicode version). See §8. |
 
 ---
 
 ## 8. Dependency-stability commitment
 
-Token stability across third-party library upgrades is a **first-class guarantee** within a tool major version. The implementation rule:
+Within a tool major version, **canonicalization output is locked**. Two narrower claims and one explicit limitation, in order:
 
-- All `canonical(text, type)` logic is implemented in-tree.
-- Third-party libraries (`python-stdnum`, `phonenumberslite`, spaCy) are used **only for detection and validation**, not for normalization that feeds the hash.
+### What is locked
 
-Concretely:
+- `canonical(text, type)` itself is implemented in-tree.
+- Third-party libraries (`python-stdnum`, `phonenumberslite`, spaCy) are used only for detection and validation, never to feed the hash directly.
+  - `phonenumbers.parse(...).national_number` and `country_code` are read out, then we format E.164 with a fixed string. Upstream formatting-default changes do not affect tokens.
+  - `python-stdnum.iban.is_valid` is the validation gate. The hashed canonical is produced in-tree (strip whitespace, uppercase). Upstream `stdnum` normalize-fn changes do not affect tokens.
+  - spaCy returns spans only; what we hash is `canonical(matched_text, type)`, not any spaCy-internal representation.
 
-- We use `phonenumbers.parse(text, default_region).national_number` to extract digits, then format E.164 ourselves with a fixed format string. Future `phonenumbers` releases that change formatting defaults do not affect tokens.
-- We use `python-stdnum.iban.is_valid` for validation, then strip whitespace and uppercase ourselves. Future `stdnum` normalize-fn changes do not affect tokens.
-- spaCy NER is detection-only; the canonical it feeds into the hash is our `canonical(text, type)`, not anything spaCy returns.
+### What is not locked (limitations)
 
-If a canonicalization rule ever needs to change (Unicode normalization tightens, regulatory body revises a format), it goes in a tool major-version bump with a documented migration path. Patch and minor releases never alter token output.
+- **Detection drift.** A `python-stdnum` upgrade that fixes a bug in `iban.is_valid` (or adds support for a new country code) will cause some strings to be detected that previously weren't, or vice versa. The set of *what gets tokenized* can shift across library versions even though the *canonical-to-token* mapping is stable.
+- **Phone parsing drift.** A `phonenumbers` upgrade that re-classifies a number's country code, splits/merges a numbering plan, or changes which digit sequences parse successfully will change the resulting `national_number` — and therefore the token — for affected numbers. We pin `phonenumbers` minor versions in `pyproject.toml` to bound this risk; review release notes before bumping.
+- **Python Unicode tables.** `unicodedata.normalize('NFKC', ...)` and `str.casefold()` use the Unicode tables shipped with the running Python interpreter. A Python release that updates the Unicode standard version (e.g. 15.1 → 16.0) can change the canonical form of newly-introduced or recently-revised codepoints. For ASCII-only inputs this is irrelevant; for general Unicode it is a low-frequency but real source of drift across Python upgrades. Pin Python minor version in deployment to bound this risk.
+
+### Migration policy
+
+If a canonicalization rule needs to change deliberately (Unicode standard tightens, regulator revises an identifier format), it goes in a tool major-version bump with a documented migration path. Patch and minor releases of the tool itself never alter `canonical()` behavior.
 
 ---
 
@@ -171,7 +184,7 @@ The token format is `<TYPE:hex>`, e.g. `<NAME:7f3a9c8b2e44d913…>`. Three alter
 
 | Format | Pros | Cons | Verdict |
 |---|---|---|---|
-| `<NAME:7f3a9c8b…>` (chosen) | Greppable. Type visible at a glance. Length predictable (38 chars for `NAME`, 39 for `EMAIL`, etc.). Distinct from any natural text. | Slightly longer than alternatives. | ✅ |
+| `<NAME:7f3a9c8b…>` (chosen) | Greppable. Type visible at a glance. Length predictable (37 chars for `CC`, 38 for `ORG`, 39 for `NAME`/`LOC`/`SSN`, 40 for `EMAIL`/`PHONE`/`IBAN` — formula is `len(TYPE) + 35`). Distinct from any natural text. | Slightly longer than alternatives. | ✅ |
 | `[NAME_1]`, `[NAME_2]` | Short, human-readable. | Per-document counter destroys cross-document joins; counter requires state. | ✗ |
 | Base64 (`<NAME:fzqcsi5E…>`) | 22 chars instead of 32. | Case-sensitive grep; `+` and `/` need escaping in some contexts (URLs, regex). | ✗ |
 | Raw hex without delimiters | Shortest. | Indistinguishable from natural hex content (commit hashes, ETags); no type visible. | ✗ |
@@ -192,6 +205,7 @@ The mapping is a JSON object — top-level keys are tokens, values are records.
     "type":         "name",
     "id":           "p1",
     "first_seen":   "2026-05-10T14:32:11Z",
+    "last_seen":    "2026-05-10T14:32:11Z",
     "occurrences":  47
   },
   "<EMAIL:1c4d22e9…>": {
@@ -200,6 +214,7 @@ The mapping is a JSON object — top-level keys are tokens, values are records.
     "type":         "email",
     "id":           null,
     "first_seen":   "2026-05-10T14:32:12Z",
+    "last_seen":    "2026-05-10T14:32:12Z",
     "occurrences":  3
   }
 }
@@ -211,18 +226,27 @@ The mapping is a JSON object — top-level keys are tokens, values are records.
 | `canonical` | string | yes | The exact `subject` that was hashed. Allows a verifier to recompute the token. |
 | `type` | string | yes | Lowercase entity type. |
 | `id` | string \| null | yes | Group `id` if any, else `null`. |
-| `first_seen` | RFC 3339 timestamp | yes | When this token was first added to the mapping. |
-| `occurrences` | integer | yes | Total occurrences across the apply run that produced this mapping. |
+| `first_seen` | RFC 3339 timestamp | yes | When this token was first added to the mapping. Preserved across runs. |
+| `last_seen` | RFC 3339 timestamp | yes | Updated to the start time of the most recent run that produced this token. |
+| `occurrences` | integer | yes | **Cumulative** count of substitutions across all `apply` runs that have written this mapping file. |
 
-Subsequent surface forms of the same entity (e.g. `Alice` and `ALICE` both mapping to `<NAME:7f3a…>`) do not create new entries; they bump `occurrences`. The `value` field captures whichever surface form was seen first.
+### Persistence semantics across runs
 
-The mapping is rewritten atomically (`tmp` file → `rename`) at the end of an `apply` run. Concurrent runs against the same mapping path are not supported.
+The mapping is **append-with-update**: an `apply` run loads the existing mapping (if present), then for each token produced this run:
+
+- New token → insert with `first_seen = last_seen = run_start`, `occurrences = run_count`.
+- Existing token → keep `first_seen`; set `last_seen = run_start`; add `run_count` to `occurrences`.
+- Token in mapping but not produced this run → left untouched (entry preserved; counters not modified).
+
+The mapping is rewritten atomically (`tmp` file → `rename`) at the end of the run. Concurrent `apply` runs against the same mapping path are **not supported** (no file locking; last writer wins and may lose intermediate state).
+
+For a fresh count (e.g. switching corpora), point `--mapping` at a new file or delete the existing one first.
 
 ---
 
 ## 11. Re-tokenization is not supported
 
-Tokens always derive from **plaintext**. There is no supported path that takes already-tokenized output and produces different tokens (e.g. for key rotation or `id` renaming).
+Tokens always derive from **plaintext**. There is no supported path that takes already-tokenized output and re-derives different tokens (e.g. for key rotation or `id` renaming).
 
 The supported recovery path for any change that shifts tokens (key rotation, `id` rename, type change, major-version migration) is:
 
@@ -230,7 +254,7 @@ The supported recovery path for any change that shifts tokens (key rotation, `id
 2. Re-run `pseudonymize apply` with the new key / terms / version.
 3. Distribute the new output; retire the old output and old mapping.
 
-This rule exists because re-tokenizing from existing tokens would require either (a) reversing the tokens via the mapping (defeats the point) or (b) re-detecting in tokenized output (unreliable and creates forensic gaps). Both options weaken the compliance posture.
+The reason isn't that we couldn't *implement* re-tokenization — given the mapping, it's mechanically easy. The reason is operational: a re-tokenize-from-mapping path requires the mapping holder (the high-trust party) to do the work, which couples key-rotation cadence to one operator's availability and creates a single point of compromise. Re-running from plaintext keeps the trust boundary clean: the corpus owner (who already has plaintext) does the rotation; the mapping holder verifies. It also avoids the subtle bug class where a re-tokenize pass and a fresh apply on the same plaintext could disagree.
 
 ---
 
