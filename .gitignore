@@ -1,0 +1,26 @@
+# Secrets / env
+.env
+
+# Shell / user dotfiles
+.bash_profile
+.bashrc
+.profile
+.zprofile
+.zshrc
+.gitconfig
+.ripgreprc
+
+# Git internals (only when present as untracked artifacts)
+.gitmodules
+
+# Editors / IDEs
+.idea
+.vscode
+
+# Agent / AI tooling
+.agents/
+.claude/
+.clinerules
+.kilocode/
+.mcp.json
+MEMORY.md
