@@ -189,7 +189,7 @@ This guarantees a curated `terms.csv` entry always overrides a structured or NER
 
 - **New entity type** → add a detector in `src/pseudonymize_text/detectors/`, register its enum value, expose in `--detectors`.
 - **New file type** (PDF, docx — deferred) → add a reader/writer to `walker.py`; pipeline downstream is unchanged.
-- **Embedded use** → import `pseudonymize.replacer.transform(text, config) -> (text, mapping_delta)` (public API, deferred to v1.1).
+- **Embedded use** → import `pseudonymize_text.transform(text, config) -> (text, mapping_delta)` (public API, deferred to 1.0.0; see [roadmap](roadmap.md)).
 
 ## Default File Extensions
 

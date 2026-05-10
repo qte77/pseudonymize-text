@@ -60,16 +60,13 @@ Full token design rationale (canonicalization, `kind` namespacing, alternatives 
 
 ## Reverse lookup
 
-```bash
-# planned for v1.1; deferred from v1
-pseudonymize reverse <token-or-file> --mapping pseudonymize-mapping.json
-```
-
-For v1, reverse lookup is a `jq` one-liner against the JSON mapping:
+For 0.1.0, reverse lookup is a `jq` one-liner against the JSON mapping:
 
 ```bash
 jq -r '.["<NAME:7f3a9c8b…>"].value' pseudonymize-mapping.json
 ```
+
+A `pseudonymize reverse` subcommand is planned for 1.0.0 (see [roadmap](roadmap.md)).
 
 ## Permanent de-identification
 
@@ -83,7 +80,7 @@ After step 2, no party — including the original operator — can recover plain
 
 ## Key rotation (procedure)
 
-Rotation tooling is deferred to v1.1. For v1, the manual procedure is:
+Rotation tooling is deferred to 1.0.0. For 0.1.0, the manual procedure is:
 
 1. Generate a new key.
 2. Re-run `pseudonymize apply` against the **plaintext source** (not the previously tokenized output) using the new key.
