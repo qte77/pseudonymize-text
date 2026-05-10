@@ -128,14 +128,7 @@ This prevents silent over-substitution.
 
 ## Precedence
 
-When the same span is matched by multiple rules:
-
-1. **Literal beats pattern.** `alice@acme.com` listed explicitly overrides `*@acme.com`.
-2. **Longer match beats shorter.** `Alice Müller` overrides `Alice` and `Müller` separately.
-3. **Term list beats structured detector.** A row in `terms.csv` overrides what `structured.py` would emit for the same span.
-4. **Structured beats NER.** A regex-validated IBAN overrides any NER guess on the same span.
-
-See [ARCHITECTURE.md → Span Precedence](ARCHITECTURE.md#span-precedence-overlap-resolution-in-replacerpy).
+Literal beats pattern; longer match beats shorter; term list beats structured detector; structured beats NER. Full rules: [ARCHITECTURE.md → Span Precedence](ARCHITECTURE.md#span-precedence-overlap-resolution-in-replacerpy).
 
 ## Encoding & whitespace
 

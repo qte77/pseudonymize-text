@@ -100,31 +100,9 @@ Re-using the plan in `apply --plan` guarantees byte-identical output to what was
 
 ## Token Format
 
-```text
-<TYPE:hexdigits>
-```
+`<TYPE:hexdigits>` where `TYPE` ∈ {`NAME`, `EMAIL`, `PHONE`, `IBAN`, `CC`, `SSN`, `ORG`, `LOC`} and `hexdigits` is 32 lowercase hex characters (128-bit truncated HMAC-SHA256).
 
-- `TYPE` ∈ uppercase enum: `NAME`, `EMAIL`, `PHONE`, `IBAN`, `CC`, `SSN`, `ORG`, `LOC`.
-- `hexdigits` = 32 lowercase hex characters = 128 bits.
-- Construction:
-
-  ```text
-  hexdigits = HMAC-SHA256(key || ":" || type, kind || ":" || subject)[:16].hex()
-  ```
-
-  | Source of span | `kind` | `subject` |
-  |---|---|---|
-  | Term-list row with `id` (literal or pattern) | `"id"` | the row's `id` string |
-  | Term-list row without `id` | `"v"` | `canonical(value, type)` (see below) |
-  | Pattern match without `id` | `"v"` | `canonical(matched_text, type)` |
-  | Structured detector (email/phone/iban/cc/ssn) | `"v"` | `canonical(matched_text, type)` |
-  | NER hit | `"v"` | `canonical(matched_text, type)` |
-
-  `kind` namespacing prevents construction of a value that would collide with an `id`-derived token.
-
-- 128-bit truncation per [NIST SP 800-107r1 §5.1](https://nvlpubs.nist.gov/nistpubs/legacy/sp/nistspecialpublication800-107r1.pdf).
-
-Full rationale (canonicalization rules per type, `kind` namespacing, Design A vs alternatives, stability matrix, dependency-stability commitment, mapping schema) lives in [HASHING.md](HASHING.md). See [SECURITY.md](SECURITY.md) for key handling and [COMPLIANCE.md](COMPLIANCE.md) for the regulatory rationale.
+Construction, canonicalization, kind-namespacing, and design rationale: [HASHING.md](HASHING.md). Key handling: [SECURITY.md](SECURITY.md). Regulatory mapping: [COMPLIANCE.md](COMPLIANCE.md).
 
 ## Report Schema (JSONL)
 
@@ -197,4 +175,4 @@ This guarantees a curated `terms.csv` entry always overrides a structured or NER
 
 ## What's deferred
 
-PDF / Office, `--expand-names` auto-variants, reverse mode, streaming, parallel files, SQLite mapping backend, encrypted mapping, key-rotation tool, SARIF, GLiNER/HF NER backends, public Python API.
+See [roadmap.md](roadmap.md) for milestones (0.2.0, 1.0.0, 2.0.0).
