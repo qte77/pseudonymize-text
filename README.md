@@ -45,4 +45,4 @@ PSEUDONYMIZE_KEY=$(cat .key) \
 
 ## License
 
-TBD.
+Apache-2.0. See [LICENSE](LICENSE) and [NOTICE](NOTICE).
