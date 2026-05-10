@@ -1,5 +1,7 @@
 # Security & Threat Model
 
+*For operators choosing how to store the key, mapping, and report.*
+
 This document describes what an attacker can and cannot do given each combination of artifacts the tool produces, and the operational rules that must hold for the design to deliver its claims.
 
 ## Artifacts produced by a run

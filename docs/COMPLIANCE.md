@@ -1,5 +1,7 @@
 # Compliance Posture
 
+*For auditors and DPOs evaluating the tool's GDPR/ENISA posture.*
+
 This document maps design decisions to the regulatory requirements they satisfy. It also enumerates what the tool does **not** claim.
 
 ## Scope

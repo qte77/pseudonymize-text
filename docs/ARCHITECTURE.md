@@ -1,5 +1,7 @@
 # Architecture
 
+*For implementers and reviewers wiring the modules together.*
+
 ## Stack
 
 | Layer | Choice | Reference |

@@ -1,5 +1,7 @@
 # Terms File Schema
 
+*For anyone authoring or editing a term list.*
+
 The term list tells the **literal** and **pattern** detectors what to look for. Structured detectors (email, phone, IBAN, CC, SSN) and NER do not consult it.
 
 Two formats are supported: CSV (recommended) and JSON.

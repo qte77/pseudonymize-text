@@ -1,5 +1,7 @@
 # Hashing
 
+*For implementers and auditors who need to know exactly what the token derivation guarantees.*
+
 Construction, input canonicalization, namespacing, and stability of the hash-derived tokens this tool produces. This is the canonical reference for all token-related design choices; other docs link here for the "why".
 
 > **Scope note.** "Hashing" here covers the input canonicalization pipeline as well as the keyed-MAC step that follows it. Both are inseparable parts of the token contract.
@@ -49,19 +51,9 @@ Hashing the surface form would make `Alice`, `ALICE`, and `alice` produce three 
 
 ## 3. The `kind` prefix
 
-The MAC message is `kind || ":" || subject` where `kind` is `"id"` or `"v"`. This prefix exists to disambiguate `id`-grouped subjects from raw value subjects — both can be arbitrary strings, and without the prefix they share a namespace.
+The MAC message is `kind || ":" || subject` where `kind` is `"id"` or `"v"`. The prefix prevents an `id`-grouped subject and a raw value subject from colliding when they happen to share a string. Example: `id="alice"` grouping variants of person Alice, plus a separate value-row whose canonical is also `alice` — without the prefix both would hash to `HMAC(K, "alice")` and produce the same token.
 
-### The ambiguity it prevents
-
-Consider an operator who has `id="alice"` grouping several variants of person Alice. Separately, the term list (or a structured/NER detector) emits a span whose canonical form is the literal string `alice`. Without the prefix, both would hash to `HMAC(K, "alice")` and produce the same token — even though they refer to different things conceptually (one is a group label, one is a literal name occurrence).
-
-With the prefix, the inputs become `b"id:alice"` vs `b"v:alice"`, which are distinct messages and produce distinct MACs. The two paths cannot collide.
-
-This is mostly a hygiene measure, not a defense against an attacker (an attacker who can write to `terms.csv` already controls how anything in the corpus gets pseudonymized). Its real value is preventing accidental confusion in normal use.
-
-### Why the colon
-
-`":"` is forbidden in `kind` (the only legal values are `id` and `v`), so a value subject that happens to start with `id:` (e.g. someone is pseudonymizing log lines containing literal text `id:p1`) becomes `b"v:id:p1"` — distinct from `b"id:p1"`. The colon is a hard delimiter.
+The colon is a hard delimiter: `":"` is forbidden in `kind` (only `id` and `v` are legal), so a value subject that happens to start with `id:` becomes `b"v:id:p1"` — distinct from `b"id:p1"`. This is hygiene, not defense — an attacker who can write `terms.csv` already controls pseudonymization. The real value is preventing accidental confusion.
 
 ---
 
@@ -156,25 +148,15 @@ What does and does not preserve token values:
 
 ## 8. Dependency-stability commitment
 
-Within a tool major version, **canonicalization output is locked**. Two narrower claims and one explicit limitation, in order:
+Within a tool major version, the canonical-to-token mapping is locked. `canonical(text, type)` is implemented in-tree; third-party libraries are used only for detection and validation, never to feed the hash directly. `phonenumbers.parse(...).national_number` and `python-stdnum.iban.is_valid` are read out, then we format / normalize ourselves with fixed rules. Upstream formatting-default changes do not affect tokens.
 
-### What is locked
+Three things are **not** locked and can drift:
 
-- `canonical(text, type)` itself is implemented in-tree.
-- Third-party libraries (`python-stdnum`, `phonenumberslite`, spaCy) are used only for detection and validation, never to feed the hash directly.
-  - `phonenumbers.parse(...).national_number` and `country_code` are read out, then we format E.164 with a fixed string. Upstream formatting-default changes do not affect tokens.
-  - `python-stdnum.iban.is_valid` is the validation gate. The hashed canonical is produced in-tree (strip whitespace, uppercase). Upstream `stdnum` normalize-fn changes do not affect tokens.
-  - spaCy returns spans only; what we hash is `canonical(matched_text, type)`, not any spaCy-internal representation.
+- **Detection drift.** A `python-stdnum` upgrade that fixes `iban.is_valid` (or adds a country code) shifts which strings get detected — and therefore tokenized — even though the canonical-to-token mapping itself is stable.
+- **Phone parsing drift.** A `phonenumbers` upgrade that re-classifies a number's country code or changes which digit sequences parse will change `national_number` and therefore the token. Pin `phonenumbers` minor versions; review release notes before bumping.
+- **Python Unicode tables.** `unicodedata.normalize('NFKC', ...)` and `str.casefold()` use the interpreter's bundled Unicode tables. A Python release that bumps the Unicode standard version (e.g. 15.1 → 16.0) can shift the canonical form of newly-introduced or revised codepoints. ASCII-only inputs are unaffected; general Unicode is a low-frequency but real drift source. Pin Python minor version in deployment to bound this.
 
-### What is not locked (limitations)
-
-- **Detection drift.** A `python-stdnum` upgrade that fixes a bug in `iban.is_valid` (or adds support for a new country code) will cause some strings to be detected that previously weren't, or vice versa. The set of *what gets tokenized* can shift across library versions even though the *canonical-to-token* mapping is stable.
-- **Phone parsing drift.** A `phonenumbers` upgrade that re-classifies a number's country code, splits/merges a numbering plan, or changes which digit sequences parse successfully will change the resulting `national_number` — and therefore the token — for affected numbers. We pin `phonenumbers` minor versions in `pyproject.toml` to bound this risk; review release notes before bumping.
-- **Python Unicode tables.** `unicodedata.normalize('NFKC', ...)` and `str.casefold()` use the Unicode tables shipped with the running Python interpreter. A Python release that updates the Unicode standard version (e.g. 15.1 → 16.0) can change the canonical form of newly-introduced or recently-revised codepoints. For ASCII-only inputs this is irrelevant; for general Unicode it is a low-frequency but real source of drift across Python upgrades. Pin Python minor version in deployment to bound this risk.
-
-### Migration policy
-
-If a canonicalization rule needs to change deliberately (Unicode standard tightens, regulator revises an identifier format), it goes in a tool major-version bump with a documented migration path. Patch and minor releases of the tool itself never alter `canonical()` behavior.
+Deliberate canonicalization changes go in a tool major-version bump with a documented migration; patch and minor releases never alter `canonical()`.
 
 ---
 
@@ -246,15 +228,9 @@ For a fresh count (e.g. switching corpora), point `--mapping` at a new file or d
 
 ## 11. Re-tokenization is not supported
 
-Tokens always derive from **plaintext**. There is no supported path that takes already-tokenized output and re-derives different tokens (e.g. for key rotation or `id` renaming).
+Tokens always derive from **plaintext**. For any change that shifts tokens (key rotation, `id` rename, type change, major-version migration): re-run `pseudonymize apply` against the plaintext source with the new key/terms; distribute the new output; retire the old.
 
-The supported recovery path for any change that shifts tokens (key rotation, `id` rename, type change, major-version migration) is:
-
-1. Retain the **plaintext source**.
-2. Re-run `pseudonymize apply` with the new key / terms / version.
-3. Distribute the new output; retire the old output and old mapping.
-
-The reason isn't that we couldn't *implement* re-tokenization — given the mapping, it's mechanically easy. The reason is operational: a re-tokenize-from-mapping path requires the mapping holder (the high-trust party) to do the work, which couples key-rotation cadence to one operator's availability and creates a single point of compromise. Re-running from plaintext keeps the trust boundary clean: the corpus owner (who already has plaintext) does the rotation; the mapping holder verifies. It also avoids the subtle bug class where a re-tokenize pass and a fresh apply on the same plaintext could disagree.
+Re-tokenizing from the mapping is mechanically easy but operationally wrong — it puts key rotation in the mapping holder's hands, coupling cadence to their availability and concentrating compromise risk. The plaintext path keeps the trust boundary clean: corpus owner rotates, mapping holder verifies.
 
 ---
 
