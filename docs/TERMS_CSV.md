@@ -22,11 +22,11 @@ Extra columns are ignored.
 
 ```csv
 id,value,type
-p1,Alice Müller,name
-p1,Müller Alice,name
-p1,"Müller, Alice",name
-p1,A. Müller,name
-p1,alice.mueller@acme.com,email
+p1,John Doe,name
+p1,Doe John,name
+p1,"Doe, John",name
+p1,J. Doe,name
+p1,john.doe@acme.com,email
 p2,Bob Smith,name
 ,acme-corp,org
 ,*@acme.com,email
@@ -39,8 +39,8 @@ UTF-8, top-level array of objects with the same field names:
 
 ```json
 [
-  {"id": "p1", "value": "Alice Müller", "type": "name"},
-  {"id": "p1", "value": "Müller Alice", "type": "name"},
+  {"id": "p1", "value": "John Doe", "type": "name"},
+  {"id": "p1", "value": "Doe John", "type": "name"},
   {"value": "*@acme.com", "type": "email"}
 ]
 ```
@@ -66,9 +66,9 @@ Rows with the same `id` produce the **same** token. Use this to collapse known v
 
 ```csv
 id,value,type
-p1,Alice Müller,name
-p1,Müller Alice,name
-p1,A. Müller,name
+p1,John Doe,name
+p1,Doe John,name
+p1,J. Doe,name
 ```
 
 All three surface forms → `<NAME:7f3a9c8b…>` because the token is `HMAC(key||":name", "id:p1")` for every row in the group, regardless of `value`. See [ARCHITECTURE.md → Token Format](ARCHITECTURE.md#token-format) for the full construction.

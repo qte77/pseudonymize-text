@@ -118,12 +118,12 @@ One JSON object per line. Read by `apply --plan`; written by both `detect` and `
   "col": 17,
   "start": 1083,
   "end": 1097,
-  "text": "Alice Müller",
+  "text": "John Doe",
   "detector": "literal",
   "type": "name",
   "id": "p1",
   "token": "<NAME:7f3a9c8b…>",
-  "context": "…signed in: Alice Müller from…"
+  "context": "…signed in: John Doe from…"
 }
 ```
 

@@ -51,7 +51,7 @@ Hashing the surface form would make `Alice`, `ALICE`, and `alice` produce three 
 
 ## 3. The `kind` prefix
 
-The MAC message is `kind || ":" || subject` where `kind` is `"id"` or `"v"`. The prefix prevents an `id`-grouped subject and a raw value subject from colliding when they happen to share a string. Example: `id="alice"` grouping variants of person Alice, plus a separate value-row whose canonical is also `alice` — without the prefix both would hash to `HMAC(K, "alice")` and produce the same token.
+The MAC message is `kind || ":" || subject` where `kind` is `"id"` or `"v"`. The prefix prevents an `id`-grouped subject and a raw value subject from colliding when they happen to share a string. Example: `id="doe"` grouping variants of person Doe, plus a separate value-row whose canonical is also `doe` — without the prefix both would hash to `HMAC(K, "doe")` and produce the same token.
 
 The colon is a hard delimiter: `":"` is forbidden in `kind` (only `id` and `v` are legal), so a value subject that happens to start with `id:` becomes `b"v:id:p1"` — distinct from `b"id:p1"`. This is hygiene, not defense — an attacker who can write `terms.csv` already controls pseudonymization. The real value is preventing accidental confusion.
 
@@ -182,8 +182,8 @@ The mapping is a JSON object — top-level keys are tokens, values are records.
 ```json
 {
   "<NAME:7f3a9c8b2e44d913…>": {
-    "value":        "Alice Müller",
-    "canonical":    "alice müller",
+    "value":        "John Doe",
+    "canonical":    "john doe",
     "type":         "name",
     "id":           "p1",
     "first_seen":   "2026-05-10T14:32:11Z",
