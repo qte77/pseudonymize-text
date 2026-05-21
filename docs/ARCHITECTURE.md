@@ -178,3 +178,27 @@ This guarantees a curated `terms.csv` entry always overrides a structured or NER
 ## What's deferred
 
 See [roadmap.md](roadmap.md) for milestones (0.2.0, 1.0.0, 2.0.0).
+
+## Working norms
+
+Conventions every contribution follows.
+
+### Boundary failure-policy
+
+Every I/O boundary is pinned to **one** policy. Reviewers consult this table when a new `try/except` shows up; if a boundary isn't listed, the row is the first thing to add.
+
+| Policy | Meaning |
+|---|---|
+| `fail-loud` | Raise immediately. Failure is a programmer / infra / config problem that silent degradation would hide. |
+| `wrap-degrade` | Catch a specific exception, log `WARNING`, return a degraded result (`None`, sparse, empty). |
+| `wrap-continue` | `wrap-degrade` inside a loop; per-item failure doesn't abort the batch. |
+
+| Boundary | Where | Policy |
+|---|---|---|
+| (filled in as v0.1.0 boundaries land — see issues #8–#14) | | |
+
+### TDD per-behaviour discipline
+
+One **Red** commit (failing test) → one **Green** commit (passing impl) per observable behaviour. Commits stay tiny; CI runs against each.
+
+For behaviours that pass by design (a structural change in cycle N already covers cycle N+M): commit the Red test anyway as a **regression-pin commit** — no separate Green.
