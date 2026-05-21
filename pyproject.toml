@@ -63,10 +63,22 @@ target-version = "py311"
 src = ["src", "tests"]
 
 [tool.ruff.lint]
-select = ["E", "F", "I", "W", "D100", "D101", "D103", "D104"]
+select = [
+  "E", "F", "I", "N", "W", "UP",   # baseline
+  "B", "S", "SIM", "RUF", "PT",    # quality
+  "ANN", "TC", "PGH", "C90", "D",  # strictness
+  "TRY",                            # try/except discipline
+]
+ignore = [
+  "TRY003",  # long error messages outside exception classes — noisy on one-off defensive raises
+]
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"
 
+[tool.ruff.lint.mccabe]
+max-complexity = 10
+
 [tool.ruff.lint.per-file-ignores]
-"tests/**" = ["D"]
+"tests/**" = ["S101", "D"]    # asserts are the point of tests; docstrings not required
+"scripts/**" = ["D", "ANN"]   # one-off scripts; over-annotating is noise
