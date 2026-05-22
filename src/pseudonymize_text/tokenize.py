@@ -1,7 +1,27 @@
-"""HMAC-SHA256 token construction per HASHING.md §1."""
+"""HMAC-SHA256 token construction and per-type canonicalization (HASHING.md §1, §2)."""
 
 import hashlib
 import hmac
+import re
+import unicodedata
+
+import phonenumbers
+
+
+def canonicalize(value: str, type_: str) -> str:
+    """Return canonical form of ``value`` for ``type_`` per HASHING.md §2."""
+    if type_ in ("name", "org", "loc"):
+        return unicodedata.normalize("NFKC", value).casefold()
+    if type_ == "email":
+        return unicodedata.normalize("NFKC", value).lower()
+    if type_ == "phone":
+        parsed = phonenumbers.parse(value, None)
+        return f"+{parsed.country_code}{parsed.national_number}"
+    if type_ == "iban":
+        return re.sub(r"\s+", "", value).upper()
+    if type_ in ("cc", "ssn"):
+        return re.sub(r"\D", "", value)
+    raise ValueError(f"unknown type: {type_}")
 
 
 def hmac_token(key: bytes, type_: str, kind: str, subject: str) -> str:
