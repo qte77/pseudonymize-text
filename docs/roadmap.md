@@ -11,7 +11,7 @@ Goal: ship the contract documented in [README](../README.md) and [docs/](.).
 Build order chosen for testability — primitives first (no I/O, no third-party deps), then detectors (each independently testable), then orchestration:
 
 1. Package scaffold — pyproject, Makefile, `src/pseudonymize_text/`, `tests/`, CI (**done** in 0.0.1).
-2. `tokenize.py` + `mapping.py` + `report.py` — pure functions over strings and dicts; no filesystem; no third-party.
+2. `tokenize.py` + `mapping.py` + `report.py` — pure functions over strings and dicts; no filesystem in `tokenize.py`. Pydantic v2 models at I/O boundaries (`MappingRecord`, `ReportHeader`, `ReportRecord`); `Span` stays stdlib `dataclass`.
 3. `replacer.py` — span dedup + right-to-left substitution. Pure over `(text, spans)`.
 4. `walker.py` — folder mirror, extension whitelist, atomic writes.
 5. `detectors/terms.py` — literal + pattern + `id`-grouping; CSV/JSON loader.
@@ -30,7 +30,6 @@ Build order chosen for testability — primitives first (no I/O, no third-party 
 
 - Public Python API: `pseudonymize_text.transform(text, config) -> (text, mapping_delta, report_records)`. Locks the surface that downstream pipelines (e.g. `doc-pipeline-engine`) call.
 - `pseudonymize reverse <token>` subcommand.
-- Pydantic v2 contract models for `Span`, `MappingEntry`, `ReportRecord`.
 - Manual key-rotation tool.
 - Truncation-length flag (raise above 128 bits for corpora > 10¹⁵ tokens).
 
