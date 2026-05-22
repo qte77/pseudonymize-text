@@ -18,3 +18,19 @@ def save_mapping(path: Path, mapping: dict[str, MappingRecord]) -> None:
     """Persist ``mapping`` to ``path`` as a JSON object keyed by token."""
     serialized = {token: rec.model_dump(mode="json") for token, rec in mapping.items()}
     path.write_text(json.dumps(serialized, indent=2), encoding="utf-8")
+
+
+def upsert(
+    mapping: dict[str, MappingRecord], token: str, incoming: MappingRecord
+) -> None:
+    """Insert or merge ``incoming`` per HASHING.md §10 append-with-update semantics."""
+    existing = mapping.get(token)
+    if existing is None:
+        mapping[token] = incoming
+        return
+    mapping[token] = existing.model_copy(
+        update={
+            "last_seen": incoming.last_seen,
+            "occurrences": existing.occurrences + incoming.occurrences,
+        }
+    )
