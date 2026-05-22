@@ -1,9 +1,8 @@
 from datetime import UTC, datetime
 from pathlib import Path
 
-from pseudonymize_text.report import ReportWriter
-
 from pseudonymize_text._schemas import ReportHeader, ReportRecord
+from pseudonymize_text.report import ReportWriter
 
 
 def _header() -> ReportHeader:
