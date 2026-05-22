@@ -1,6 +1,7 @@
 """JSON-backed mapping persistence (HASHING.md §10)."""
 
 import json
+import os
 from pathlib import Path
 
 from ._schemas import MappingRecord
@@ -15,9 +16,11 @@ def load_mapping(path: Path) -> dict[str, MappingRecord]:
 
 
 def save_mapping(path: Path, mapping: dict[str, MappingRecord]) -> None:
-    """Persist ``mapping`` to ``path`` as a JSON object keyed by token."""
+    """Persist ``mapping`` atomically to ``path`` via tmp file plus ``os.replace``."""
     serialized = {token: rec.model_dump(mode="json") for token, rec in mapping.items()}
-    path.write_text(json.dumps(serialized, indent=2), encoding="utf-8")
+    tmp = path.with_name(path.name + ".tmp")
+    tmp.write_text(json.dumps(serialized, indent=2), encoding="utf-8")
+    os.replace(tmp, path)
 
 
 def upsert(
