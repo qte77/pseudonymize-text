@@ -30,6 +30,23 @@ References:
 - SHA-256: [NIST FIPS 180-4](https://csrc.nist.gov/pubs/fips/180-4/upd1/final)
 - Truncation rationale: [NIST SP 800-107r1 §5.1](https://nvlpubs.nist.gov/nistpubs/legacy/sp/nistspecialpublication800-107r1.pdf)
 
+### Worked example
+
+For implementers writing parity tests. UTF-8 encoding for both `K` and `M`.
+
+| Input | Value |
+|---|---|
+| `secret_key` | `test-key` |
+| `TYPE` | `NAME` |
+| `K` | `test-key:name` |
+
+| `kind` | `subject` | `M` | Expected token |
+|---|---|---|---|
+| `id` | `p1` | `id:p1` | `<NAME:d273039bdb37a853c53f592bb1b460e0>` |
+| `v` | `john doe` | `v:john doe` | `<NAME:003e28a1b30fc476e898352263414f11>` |
+
+The `v`-kind subject `john doe` is the canonical form of the surface string `John Doe` for type `name` (NFKC + `str.casefold()`; see §2).
+
 ---
 
 ## 2. Per-type canonicalization
