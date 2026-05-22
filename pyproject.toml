@@ -81,5 +81,5 @@ convention = "google"
 max-complexity = 10
 
 [tool.ruff.lint.per-file-ignores]
-"tests/**" = ["S101", "D"]    # asserts are the point of tests; docstrings not required
+"tests/**" = ["S101", "S105", "S106", "D"]  # asserts + fixture tokens are the point of tests; docstrings not required
 "scripts/**" = ["D", "ANN"]   # one-off scripts; over-annotating is noise
