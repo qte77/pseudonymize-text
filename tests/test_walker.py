@@ -31,6 +31,24 @@ def test_walker_non_whitelisted_file_byte_copied(tmp_path: Path) -> None:
     assert (out_dir / "image.png").read_bytes() == raw
 
 
+def test_walker_dir_symlink_not_followed(tmp_path: Path) -> None:
+    in_dir = tmp_path / "in"
+    out_dir = tmp_path / "out"
+    in_dir.mkdir()
+    (in_dir / "kept.txt").write_text("keep me", encoding="utf-8")
+
+    outside = tmp_path / "outside"
+    outside.mkdir()
+    (outside / "secret.txt").write_text("secret", encoding="utf-8")
+    (in_dir / "link").symlink_to(outside, target_is_directory=True)
+
+    walk_and_process(in_dir, out_dir, lambda text, _p: text)
+
+    assert (out_dir / "kept.txt").exists()
+    assert not (out_dir / "link" / "secret.txt").exists()
+    assert not (out_dir / "link").exists()
+
+
 def test_walker_atomic_write_tmp_file_mode_is_0600(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
