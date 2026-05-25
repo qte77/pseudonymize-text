@@ -1,10 +1,13 @@
-.PHONY: help setup test lint format check_links check clean
+TERMS_FILE ?= tests/fixtures/terms.csv
+
+.PHONY: help setup test lint lint_terms format check_links check clean
 
 help:
 	@echo 'Targets:'
 	@echo '  setup        Install runtime + dev + ner deps via uv'
 	@echo '  test         Run pytest'
 	@echo '  lint         Run ruff check + markdownlint'
+	@echo '  lint_terms   Validate $$(TERMS_FILE) for ReDoS / broad-pattern violations'
 	@echo '  format       Run ruff format'
 	@echo '  check_links  Run lychee against README and docs/'
 	@echo '  check        lint + test'
@@ -19,6 +22,9 @@ test:
 lint:
 	uv run ruff check .
 	markdownlint README.md docs/
+
+lint_terms:
+	uv run python -m pseudonymize_text.lint_terms $(TERMS_FILE)
 
 format:
 	uv run ruff format .
