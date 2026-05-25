@@ -1,0 +1,18 @@
+# Lychee link checker configuration
+# https://lychee.cli.rs/usage/config/
+
+# Accept status codes commonly returned by bot-blocking sites
+# 401/403 = auth-gated or bot-blocked (publishers, hosted docs)
+# 406/415  = bot-blocking via Accept / Content-Type heuristics
+# 429      = rate limiting
+accept = [200, 202, 204, 301, 401, 403, 406, 415, 429]
+
+exclude_path = [
+  ".venv",
+  ".github/workflows",  # workflow files contain ${{ }} template vars
+]
+
+# URL excludes intentionally empty — add entries here only when a specific
+# valid URL is shown to be CI-flaky. Keeping the list empty satisfies issue #5
+# until a real exclusion is needed.
+exclude = []
