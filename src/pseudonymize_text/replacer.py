@@ -1,5 +1,6 @@
 """Span dedup + right-to-left substitution (ARCHITECTURE.md → replacer.py)."""
 
+import unicodedata
 from collections.abc import Callable, Iterable
 from dataclasses import dataclass
 
@@ -23,6 +24,11 @@ class Span:
     detector: str
     id: str | None = None
     confidence: float | None = None
+
+
+def _ignore_key(s: str) -> str:
+    """NFKC + casefold, the comparison form used by ``--ignore`` matching."""
+    return unicodedata.normalize("NFKC", s).casefold()
 
 
 def _rank(detector: str) -> int:
@@ -50,18 +56,22 @@ def _dedup_overlaps(spans: list[Span]) -> list[Span]:
 
 
 def apply_spans(
-    text: str, spans: Iterable[Span], get_token: Callable[[Span], str]
+    text: str,
+    spans: Iterable[Span],
+    get_token: Callable[[Span], str],
+    ignore: Iterable[str] = (),
 ) -> str:
     """Return ``text`` with each accepted span replaced by ``get_token(span)``.
 
-    Substitution is single-pass and right-to-left: spans are processed in
-    descending ``start`` order so each replacement leaves earlier offsets
-    valid. Empty span input returns ``text`` unchanged.
-
-    Overlap precedence (literal > structured > NER, longer wins) and
-    ``--ignore`` suppression are introduced in later Red/Green cycles.
+    Pipeline: overlap dedup (literal > structured > NER, longer wins) →
+    ``ignore`` suppression (NFKC + casefold match on each span's surface
+    text) → right-to-left single-pass substitution. Empty span input
+    returns ``text`` unchanged.
     """
     kept = _dedup_overlaps(list(spans))
+    ignore_set = {_ignore_key(entry) for entry in ignore}
+    if ignore_set:
+        kept = [s for s in kept if _ignore_key(s.text) not in ignore_set]
     if not kept:
         return text
     ordered = sorted(kept, key=lambda s: s.start, reverse=True)
