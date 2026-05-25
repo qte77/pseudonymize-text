@@ -34,3 +34,28 @@ def test_canonicalize_matches_hashing_md_rules(
     value: str, type_: str, expected: str
 ) -> None:
     assert canonicalize(value, type_) == expected
+
+
+def test_hmac_token_mac_key_not_in_traceback_locals(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from pseudonymize_text import tokenize
+
+    def boom(*_args: object, **_kwargs: object) -> None:
+        raise RuntimeError("simulated mid-HMAC failure")
+
+    monkeypatch.setattr(tokenize.hmac, "new", boom)
+
+    with pytest.raises(RuntimeError) as exc_info:
+        hmac_token(b"super-secret-key", "NAME", "v", "john")
+
+    tb = exc_info.value.__traceback__
+    found = False
+    while tb is not None:
+        if tb.tb_frame.f_code.co_name == "hmac_token":
+            locals_ = tb.tb_frame.f_locals
+            assert "key" not in locals_, "raw HMAC key must not survive in frame"
+            assert "mac_key" not in locals_, "derived mac_key must not survive in frame"
+            found = True
+        tb = tb.tb_next
+    assert found, "hmac_token frame not found in traceback"

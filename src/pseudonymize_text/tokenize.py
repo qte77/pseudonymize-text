@@ -43,6 +43,11 @@ def hmac_token(key: bytes, type_: str, kind: str, subject: str) -> str:
         (128-bit truncation of HMAC-SHA256).
     """
     mac_key = key + b":" + type_.lower().encode()
-    mac_msg = (kind + ":" + subject).encode()
-    mac = hmac.new(mac_key, mac_msg, hashlib.sha256).digest()
-    return f"<{type_}:{mac[:16].hex()}>"
+    del key
+    try:
+        mac_msg = (kind + ":" + subject).encode()
+        mac = hmac.new(mac_key, mac_msg, hashlib.sha256).digest()
+        token = f"<{type_}:{mac[:16].hex()}>"
+    finally:
+        del mac_key
+    return token

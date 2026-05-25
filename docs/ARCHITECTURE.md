@@ -210,7 +210,7 @@ Every I/O boundary is pinned to **one** policy. Reviewers consult this table whe
 
 | Boundary | Where | Policy |
 |---|---|---|
-| HMAC over canonical subject | `tokenize.hmac_token` | `fail-loud` (programmer error if `kind` or `type_` is bad). |
+| HMAC over canonical subject | `tokenize.hmac_token` | `fail-loud` (programmer error if `kind` or `type_` is bad). The raw `key` parameter and the derived `mac_key` are scrubbed from frame locals (via `del` + `try/finally`) so neither survives in a traceback if the HMAC computation raises. |
 | Per-type canonicalization | `tokenize.canonicalize` | `fail-loud` (`ValueError` on unknown type; `phonenumbers.NumberParseException` propagated). |
 | Mapping JSON load | `mapping.load_mapping` | `fail-loud` (corrupt JSON or `ValidationError` on missing/extra fields). |
 | Mapping JSON save | `mapping.save_mapping` | `fail-loud` (disk full / permission denied propagated mid-rename; tmp file may be left behind, next save overwrites it). Tmp file is created with mode `0o600` (umask-independent) so plaintext bytes are not world-readable during the write window. |
