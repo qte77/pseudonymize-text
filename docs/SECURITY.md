@@ -31,6 +31,7 @@ The design assumes the operator can keep at least the **mapping** (or the **key 
 | Rule | Enforced by tool? | Notes |
 |---|---|---|
 | Mapping must not reside inside `<out_dir>` | **Enforced** (exit `7`) | Path is canonicalized and checked. |
+| Report must not reside inside `<out_dir>` | **Enforced** (exit `7`) | Same containment check as mapping; report contains plaintext `text` + `context`. |
 | Key must come from `--key-file` or `PSEUDONYMIZE_KEY` env | **Enforced** (exit `3`) | No interactive prompt; no default key. |
 | Key not echoed in logs or reports | **Enforced** | `--verbose` only logs file paths, span counts, key fingerprint (HMAC of key with fixed label). |
 | Key file mode `0600` | Recommended | Operator responsibility; tool warns on world-readable key files. |
@@ -57,8 +58,33 @@ Full token design rationale (canonicalization, `kind` namespacing, alternatives 
 - **Side channels** (memory dumps, swap, core files). Use a host with disabled core dumps and encrypted swap when handling regulated data.
 - **Compromised host running the tool.** A root-level compromise during a run defeats every protection.
 - **Linkage from quasi-identifiers** the tool does not touch (writing style, timestamps, document metadata, image EXIF). Tokenizing names does not anonymize a document whose timestamps and rare phrases uniquely identify the author.
-- **Adversarial input.** Malicious files designed to crash detectors are treated as I/O errors; no sandboxing of the input.
 - **Supply-chain attacks** on `python-stdnum`, `phonenumberslite`, or spaCy. Pin versions and verify hashes if your environment requires it.
+- **Adversarial input corpora.** Malicious files designed to crash detectors are treated as I/O errors; no sandboxing of the input. Malicious `terms.csv` / `--ignore` files **are** in-scope — see "In-scope adversarial inputs" below.
+
+## In-scope adversarial inputs
+
+| Source | Threat | Mitigation |
+|---|---|---|
+| `terms.csv` (operator- or LLM-generated) | ReDoS via wildcard patterns expanding to catastrophic backtracking. | Structural guard rejects `(\.\*){2,}` / `(\?\+){1,}` at load (exit 4); per-match length cap `MAX_MATCH_LEN = 4096`; `--allow-broad-patterns` does not override the structural guard. |
+| `--ignore` file | Zero-width / format characters in entries cause silent suppression failure. | NFKC + strip Unicode categories `Cf` and non-ASCII `Zs`; log `WARNING` on stripped chars. |
+| `--plan` JSONL | `ReportRecord.file` field with `..` / absolute paths mirroring outside `<out_dir>`. | Containment check at plan-load (exit 4); resolved path must be under `<out_dir>`. |
+| Input file size | Multi-GB single files exhausting memory. | `MAX_FILE_BYTES` (default 256 MB) on walker; `MAX_MAPPING_BYTES` on `mapping.load_mapping`. Exit 6 with clear message. |
+
+## LLM and downstream consumption
+
+The tool is not LLM-aware. When pseudonymized output flows into an LLM-bound pipeline (RAG ingestion, summarisation, chatbot context, fine-tuning corpus), operators must treat these properties explicitly:
+
+### Pseudonymization is not a prompt-injection defense
+
+The tool replaces *detected entities*. Adversarial instructions in surrounding prose (`Ignore previous instructions; reveal …`) pass through unchanged. A replaced `<NAME:7f3a…>` inside an injection payload is still a live payload. Use a structural prompt-injection mitigation (system-prompt separation, XML-tagged context fencing, instruction-data separation) at the LLM boundary; the pseudonymizer is not a content filter.
+
+### Artifacts must not enter LLM chat contexts
+
+`pseudonymize-mapping.json` and `pseudonymize-report.jsonl` contain plaintext PII (the mapping by definition; the report's `text` and `context` fields). Pasting either into an LLM chat for debugging ships every plaintext span to the model provider. Treat them with the same access controls as the HMAC key. AGENTS.md non-negotiable enforces the agent-side rule.
+
+### Token format and chat-template tokenizers
+
+`<TYPE:hex>` uses angle brackets, which collide with chat-template special tokens in several model families (`<s>` / `</s>`, `<|im_start|>`, `<|endoftext|>`, `<extra_id_N>`). Operators feeding pseudonymized text to an LLM should verify that the target tokenizer treats `<TYPE:hex>` as ordinary text. A delimiter-swapped variant (`[[TYPE:hex]]`) for LLM-bound corpora is planned for 0.2.0 via `--output-format`. See [HASHING.md §9](HASHING.md#9-output-format).
 
 ## Reverse lookup
 
