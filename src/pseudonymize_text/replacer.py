@@ -34,10 +34,13 @@ def _rank(detector: str) -> int:
 def _dedup_overlaps(spans: list[Span]) -> list[Span]:
     """Drop any span that overlaps an already-kept higher-priority span.
 
-    Priority order: rank ASC (literal > structured > NER), then by start ASC
-    for a stable shape. Length-tiebreak lands in a later cycle.
+    Priority key: (rank ASC, length DESC, start ASC). Rank implements
+    literal > structured > NER per ARCHITECTURE.md § Span Precedence; the
+    DESC length term implements the same-rank tiebreak (longer wins).
     """
-    ordered = sorted(spans, key=lambda s: (_rank(s.detector), s.start))
+    ordered = sorted(
+        spans, key=lambda s: (_rank(s.detector), -(s.end - s.start), s.start)
+    )
     kept: list[Span] = []
     for span in ordered:
         if any(span.start < k.end and k.start < span.end for k in kept):
