@@ -3,6 +3,8 @@
 from collections.abc import Callable, Iterable
 from dataclasses import dataclass
 
+_DETECTOR_RANK = {"literal": 0, "structured": 1, "ner": 2}
+
 
 @dataclass(frozen=True)
 class Span:
@@ -23,6 +25,27 @@ class Span:
     confidence: float | None = None
 
 
+def _rank(detector: str) -> int:
+    """Source rank per ARCHITECTURE.md § Span Precedence (lower wins)."""
+    head = detector.split(":", 1)[0]
+    return _DETECTOR_RANK.get(head, len(_DETECTOR_RANK))
+
+
+def _dedup_overlaps(spans: list[Span]) -> list[Span]:
+    """Drop any span that overlaps an already-kept higher-priority span.
+
+    Priority order: rank ASC (literal > structured > NER), then by start ASC
+    for a stable shape. Length-tiebreak lands in a later cycle.
+    """
+    ordered = sorted(spans, key=lambda s: (_rank(s.detector), s.start))
+    kept: list[Span] = []
+    for span in ordered:
+        if any(span.start < k.end and k.start < span.end for k in kept):
+            continue
+        kept.append(span)
+    return kept
+
+
 def apply_spans(
     text: str, spans: Iterable[Span], get_token: Callable[[Span], str]
 ) -> str:
@@ -35,9 +58,10 @@ def apply_spans(
     Overlap precedence (literal > structured > NER, longer wins) and
     ``--ignore`` suppression are introduced in later Red/Green cycles.
     """
-    ordered = sorted(spans, key=lambda s: s.start, reverse=True)
-    if not ordered:
+    kept = _dedup_overlaps(list(spans))
+    if not kept:
         return text
+    ordered = sorted(kept, key=lambda s: s.start, reverse=True)
     result = text
     for span in ordered:
         result = result[: span.start] + get_token(span) + result[span.end :]
