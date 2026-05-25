@@ -59,26 +59,82 @@ def _row(value: str, type_: str | None, id_: str | None) -> TermRow:
     )
 
 
+_WILDCARD_CLASSES: dict[str, tuple[str, str]] = {
+    "email": (r"[^\s@,;<>]+", r"[^\s@,;<>]"),
+    "name": (r"[^\s,;]+", r"[^\s,;]"),
+    "org": (r"[^\s,;]+", r"[^\s,;]"),
+    "loc": (r"[^\s,;]+", r"[^\s,;]"),
+    "phone": (r"\d+", r"\d"),
+    "iban": (r"\d+", r"\d"),
+    "cc": (r"\d+", r"\d"),
+    "ssn": (r"\d+", r"\d"),
+}
+_DEFAULT_WILDCARDS: tuple[str, str] = (r"\S+", r"\S")
+
+
+def _is_pattern(value: str) -> bool:
+    """``value`` contains an unescaped ``*`` or ``?``."""
+    i = 0
+    while i < len(value):
+        if value[i] == "\\" and i + 1 < len(value):
+            i += 2
+            continue
+        if value[i] in ("*", "?"):
+            return True
+        i += 1
+    return False
+
+
+def _compile_pattern(row: TermRow) -> re.Pattern[str]:
+    """Translate a wildcard ``TermRow`` into a compiled regex.
+
+    Type-aware per TERMS_CSV.md § Wildcard patterns table.
+    """
+    star, question = _WILDCARD_CLASSES.get(row.type, _DEFAULT_WILDCARDS)
+    parts: list[str] = []
+    i = 0
+    while i < len(row.value):
+        ch = row.value[i]
+        if ch == "\\" and i + 1 < len(row.value):
+            parts.append(re.escape(row.value[i + 1]))
+            i += 2
+        elif ch == "*":
+            parts.append(star)
+            i += 1
+        elif ch == "?":
+            parts.append(question)
+            i += 1
+        else:
+            parts.append(re.escape(ch))
+            i += 1
+    return re.compile(
+        rf"\b{''.join(parts)}\b", flags=re.IGNORECASE | re.UNICODE
+    )
+
+
 def detect_terms(text: str, terms: list[TermRow]) -> Iterator[Span]:
     r"""Yield ``Span`` for every term that matches ``text``.
 
     Literal matching: ``\b…\b`` Unicode word boundary, case-insensitive
-    via ``re.IGNORECASE`` (NFKC normalisation happens at canonicalisation
-    time in ``tokenize.canonicalize`` — TERMS_CSV.md cross-reference).
-    Pattern (wildcard) expansion lands in T4.
+    via ``re.IGNORECASE``. Wildcard patterns are translated to regex
+    per the type-aware table in TERMS_CSV.md § Wildcard patterns; a
+    pattern Span has ``detector="pattern"`` instead of ``"literal"``.
     """
     for row in terms:
-        if "*" in row.value or "?" in row.value:
-            continue  # patterns land in T4
-        pattern = re.compile(
-            rf"\b{re.escape(row.value)}\b", flags=re.IGNORECASE | re.UNICODE
-        )
+        if _is_pattern(row.value):
+            pattern = _compile_pattern(row)
+            detector = "pattern"
+        else:
+            pattern = re.compile(
+                rf"\b{re.escape(row.value)}\b", flags=re.IGNORECASE | re.UNICODE
+            )
+            detector = "literal"
         for match in pattern.finditer(text):
             yield Span(
                 start=match.start(),
                 end=match.end(),
                 text=match.group(0),
                 type=row.type,
-                detector="literal",
+                detector=detector,
                 id=row.id,
             )
