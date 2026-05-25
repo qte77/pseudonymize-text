@@ -13,7 +13,7 @@ def _header() -> ReportHeader:
         schema="pseudonymize.report/1",
         tool_version="0.0.1",
         started_at=datetime(2026, 5, 22, 14, 0, 0, tzinfo=UTC),
-        config_hash="deadbeef",
+        config_hash="deadbeefcafef00d0123456789abcdef",
     )
 
 

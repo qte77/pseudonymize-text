@@ -27,7 +27,7 @@ class ReportHeader(BaseModel):
     schema_: Literal["pseudonymize.report/1"] = Field(alias="schema")
     tool_version: str
     started_at: AwareDatetime
-    config_hash: str
+    config_hash: str = Field(pattern=r"^[0-9a-f]{32}$")
 
 
 class ReportRecord(BaseModel):
