@@ -2,8 +2,12 @@
 
 import csv
 import json
+import re
+from collections.abc import Iterator
 from dataclasses import dataclass
 from pathlib import Path
+
+from ..replacer import Span
 
 
 @dataclass(frozen=True)
@@ -53,3 +57,28 @@ def _row(value: str, type_: str | None, id_: str | None) -> TermRow:
         type=(type_ or "name").strip(),
         id=id_.strip() if id_ else None,
     )
+
+
+def detect_terms(text: str, terms: list[TermRow]) -> Iterator[Span]:
+    r"""Yield ``Span`` for every term that matches ``text``.
+
+    Literal matching: ``\b…\b`` Unicode word boundary, case-insensitive
+    via ``re.IGNORECASE`` (NFKC normalisation happens at canonicalisation
+    time in ``tokenize.canonicalize`` — TERMS_CSV.md cross-reference).
+    Pattern (wildcard) expansion lands in T4.
+    """
+    for row in terms:
+        if "*" in row.value or "?" in row.value:
+            continue  # patterns land in T4
+        pattern = re.compile(
+            rf"\b{re.escape(row.value)}\b", flags=re.IGNORECASE | re.UNICODE
+        )
+        for match in pattern.finditer(text):
+            yield Span(
+                start=match.start(),
+                end=match.end(),
+                text=match.group(0),
+                type=row.type,
+                detector="literal",
+                id=row.id,
+            )
