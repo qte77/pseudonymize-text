@@ -1,6 +1,7 @@
 """Tests for detectors/structured.py (issue #11)."""
 
 import pytest
+
 from pseudonymize_text.detectors.structured import (
     detect_credit_cards,
     detect_emails,
