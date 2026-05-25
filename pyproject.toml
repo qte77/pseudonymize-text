@@ -43,6 +43,7 @@ Issues = "https://github.com/qte77/pseudonymize-text/issues"
 dev = [
   "pytest>=8.0",
   "pytest-cov>=5.0",
+  "hypothesis>=6.0",
   "ruff>=0.5",
 ]
 
