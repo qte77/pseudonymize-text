@@ -17,6 +17,12 @@
 .idea
 .vscode
 
+# Python build / cache artefacts
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+
 # Agent / AI tooling
 .agents/
 .claude/
