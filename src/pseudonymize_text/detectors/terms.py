@@ -19,7 +19,10 @@ class TermRow:
     id: str | None = None
 
 
-def load_terms(path: Path) -> list[TermRow]:
+_BROAD_PATTERNS: frozenset[str] = frozenset({"*", "*@*", "?", "**"})
+
+
+def load_terms(path: Path, *, allow_broad: bool = False) -> list[TermRow]:
     """Load a CSV or JSON term file.
 
     CSV (`.csv`): UTF-8, header row required; columns ``value`` (required),
@@ -29,16 +32,28 @@ def load_terms(path: Path) -> list[TermRow]:
     JSON (`.json`): UTF-8 top-level array of objects with the same fields.
 
     Empty file returns ``[]``. Unknown extension raises ``ValueError``.
+
+    Patterns in the broad set (``*``, ``*@*``, ``?``, ``**``) are rejected
+    unless ``allow_broad=True``; see TERMS_CSV.md § Broad-pattern guard.
     """
     suffix = path.suffix.lower()
     raw = path.read_text(encoding="utf-8")
     if not raw.strip():
         return []
     if suffix == ".csv":
-        return _parse_csv(raw)
-    if suffix == ".json":
-        return _parse_json(raw)
-    raise ValueError(f"unsupported terms format: {suffix!r}")
+        rows = _parse_csv(raw)
+    elif suffix == ".json":
+        rows = _parse_json(raw)
+    else:
+        raise ValueError(f"unsupported terms format: {suffix!r}")
+    if not allow_broad:
+        for row in rows:
+            if row.value in _BROAD_PATTERNS:
+                raise ValueError(
+                    f"broad pattern {row.value!r} rejected; pass allow_broad "
+                    "(--allow-broad-patterns at CLI) to override"
+                )
+    return rows
 
 
 def _parse_csv(raw: str) -> list[TermRow]:
