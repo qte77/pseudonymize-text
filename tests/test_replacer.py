@@ -72,6 +72,19 @@ def test_apply_spans_overlap_literal_beats_ner() -> None:
     assert result == "John works at <LITERAL>"
 
 
+def test_apply_spans_overlap_length_tiebreak_longer_wins() -> None:
+    text = "Acme Corporation Ltd"
+    spans = [
+        Span(start=0, end=4, text="Acme", type="name", detector="literal"),
+        Span(
+            start=0, end=16, text="Acme Corporation", type="org",
+            detector="literal",
+        ),
+    ]
+    result = apply_spans(text, spans, lambda s: f"<{s.type.upper()}>")
+    assert result == "<ORG> Ltd"
+
+
 def test_apply_spans_overlap_structured_beats_ner() -> None:
     text = "Contact a@example.com today"
     spans = [
