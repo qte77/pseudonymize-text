@@ -3,6 +3,7 @@
 from pathlib import Path
 
 import pytest
+from pseudonymize_text.lint_terms import main as lint_terms_main
 
 from pseudonymize_text.detectors.terms import TermRow, detect_terms, load_terms
 
@@ -118,6 +119,23 @@ def test_load_terms_allow_broad_patterns_lets_them_through(tmp_path: Path) -> No
     csv.write_text("value,type\n*,name\n", encoding="utf-8")
     rows = load_terms(csv, allow_broad=True)
     assert rows == [TermRow(value="*", type="name", id=None)]
+
+
+def test_lint_terms_main_zero_on_valid_file(tmp_path: Path) -> None:
+    csv = tmp_path / "terms.csv"
+    csv.write_text("value,type\nJohn Doe,name\n*@acme.com,email\n", encoding="utf-8")
+    assert lint_terms_main([str(csv)]) == 0
+
+
+def test_lint_terms_main_nonzero_on_broad_pattern(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    csv = tmp_path / "terms.csv"
+    csv.write_text("value,type\n*,name\n", encoding="utf-8")
+    rc = lint_terms_main([str(csv)])
+    assert rc != 0
+    out = capsys.readouterr()
+    assert "broad pattern" in (out.err + out.out)
 
 
 def test_load_terms_json_matches_csv_semantics(tmp_path: Path) -> None:
