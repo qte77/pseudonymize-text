@@ -5,6 +5,8 @@ import shutil
 from collections.abc import Callable
 from pathlib import Path
 
+from . import formats
+
 WHITELISTED_EXTENSIONS: frozenset[str] = frozenset(
     {".txt", ".md", ".log", ".py", ".json", ".yaml", ".yml", ".csv", ".toml", ".ini"}
 )
@@ -44,6 +46,8 @@ def walk_and_process(
             text = src.read_text(encoding="utf-8")
             transformed = transform(text, rel)
             _atomic_write_text(dst, transformed)
+        elif formats.is_mail_format(src.suffix):
+            formats.process_eml(src, dst, transform)
         else:
             shutil.copyfile(src, dst)
 
