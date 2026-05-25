@@ -190,6 +190,8 @@ The token format is `<TYPE:hex>`, e.g. `<NAME:7f3a9c8b2e44d913…>`. Three alter
 
 The angle brackets are deliberate: they are uncommon in natural text, easy to grep (`<NAME:`), easy to detect for un-pseudonymization tooling, and parse cleanly in JSON/CSV/YAML when escaped or quoted by the host format.
 
+**Caveat for LLM-bound corpora.** Several chat-template tokenizers reserve angle-bracket sequences as special tokens — `<s>` / `</s>` (Llama), `<|im_start|>` / `<|endoftext|>` (ChatML, GPT-style), `<extra_id_N>` (T5). Feeding `<TYPE:hex>` text through such a tokenizer may yield surprising splits or trigger control-sequence behaviour. Operators bound for an LLM pipeline should verify the target tokenizer treats `<TYPE:hex>` as ordinary text; a delimiter-swapped output mode (e.g. `[[TYPE:hex]]`) is planned for 0.2.0 via `--output-format` — see [roadmap.md](roadmap.md). The on-disk format inside this repo remains `<TYPE:hex>`; the swap happens at the report/output boundary, not at the token-construction boundary, so HMAC stability is preserved.
+
 ---
 
 ## 10. Mapping file schema (normative)

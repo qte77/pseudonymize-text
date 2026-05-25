@@ -25,6 +25,7 @@ Build order chosen for testability — primitives first (no I/O, no third-party 
 - `--expand-names` auto-variants (with collision detection).
 - Pre-commit hook variant.
 - Per-language NER model auto-selection.
+- `--output-format` flag — emit tokens as `[[TYPE:hex]]` (or another non-angle-bracket delimiter) for LLM-bound corpora that need to avoid chat-template special-token collisions. See [HASHING.md §9](HASHING.md#9-output-format).
 
 ## 1.0.0 — public API + reverse
 
