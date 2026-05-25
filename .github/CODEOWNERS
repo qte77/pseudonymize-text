@@ -1,0 +1,11 @@
+# CODEOWNERS — human-review gate on cryptographic / boundary-policy core.
+#
+# These three files define the HMAC token, the mapping persistence, and the
+# pydantic schemas enforcing field-level invariants. Any change here — including
+# AI-authored PRs — must be approved by a human owner before merge.
+#
+# See docs/HASHING.md and docs/ARCHITECTURE.md → Working norms.
+
+/src/pseudonymize_text/tokenize.py   @qte77
+/src/pseudonymize_text/mapping.py    @qte77
+/src/pseudonymize_text/_schemas.py   @qte77
