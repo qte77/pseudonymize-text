@@ -57,3 +57,37 @@ def test_apply_spans_non_overlapping_substitutions_preserve_offsets() -> None:
     result = apply_spans(text, spans, lambda _s: "<NAME>")
     assert result == "Hello <NAME>, this is <NAME>"
 
+
+def test_apply_spans_overlap_literal_beats_ner() -> None:
+    text = "John works at ACME"
+    spans = [
+        Span(start=14, end=18, text="ACME", type="org", detector="literal"),
+        Span(start=14, end=18, text="ACME", type="org", detector="ner:ORG"),
+    ]
+    result = apply_spans(
+        text,
+        spans,
+        lambda s: "<LITERAL>" if s.detector == "literal" else "<NER>",
+    )
+    assert result == "John works at <LITERAL>"
+
+
+def test_apply_spans_overlap_structured_beats_ner() -> None:
+    text = "Contact a@example.com today"
+    spans = [
+        Span(
+            start=8, end=21, text="a@example.com", type="email",
+            detector="structured:email",
+        ),
+        Span(
+            start=8, end=21, text="a@example.com", type="email",
+            detector="ner:EMAIL",
+        ),
+    ]
+    result = apply_spans(
+        text,
+        spans,
+        lambda s: "<STRUCT>" if s.detector.startswith("structured") else "<NER>",
+    )
+    assert result == "Contact <STRUCT> today"
+
