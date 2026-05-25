@@ -3,9 +3,9 @@
 from pathlib import Path
 
 import pytest
-from pseudonymize_text.lint_terms import main as lint_terms_main
 
 from pseudonymize_text.detectors.terms import TermRow, detect_terms, load_terms
+from pseudonymize_text.lint_terms import main as lint_terms_main
 
 
 def test_load_terms_csv_required_value_only(tmp_path: Path) -> None:
