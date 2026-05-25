@@ -218,6 +218,7 @@ Every I/O boundary is pinned to **one** policy. Reviewers consult this table whe
 | Plan-file containment | `cli` plan loader | `fail-loud` (exit 4 if any `ReportRecord.file` contains `..`, is absolute, or resolves outside `<out_dir>`; prevents an operator-supplied plan from mirroring to arbitrary filesystem locations). |
 | Walker file enumeration | `walker.walk_and_process` | `fail-loud` (raises `SymlinkEscapeError` when a file symlink in `<in_dir>` resolves outside; UTF-8 decode errors propagate from `Path.read_text`; disk failures propagate from the atomic-write helper). Tmp output files are opened with mode `0o600` (umask-independent). |
 | Term-list load | `detectors.terms.load_terms` | `fail-loud` (raises `ValueError` on unsupported extension, broad pattern `*`/`*@*`/`?`/`**` without `allow_broad`, or malformed CSV/JSON; the same helper backs `lint_terms` so detector and lint cannot disagree). |
+| Structured-detector validation | `detectors.structured.detect_*` | `wrap-continue`. `python-stdnum`'s `iban.is_valid` / `luhn.is_valid` are predicates (do not raise); `phonenumbers.PhoneNumberMatcher` swallows its own parse errors and yields only valid candidates. Lookalikes that fail validation are silently skipped so a single false-positive does not abort the file. |
 
 ### TDD per-behaviour discipline
 
