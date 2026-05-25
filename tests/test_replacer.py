@@ -85,6 +85,25 @@ def test_apply_spans_overlap_length_tiebreak_longer_wins() -> None:
     assert result == "<ORG> Ltd"
 
 
+def test_apply_spans_ignore_list_suppresses_matching_span() -> None:
+    text = "John and Bob met"
+    spans = [
+        Span(start=0, end=4, text="John", type="name", detector="literal"),
+        Span(start=9, end=12, text="Bob", type="name", detector="literal"),
+    ]
+    result = apply_spans(text, spans, lambda _s: "<NAME>", ignore=["bob"])
+    assert result == "<NAME> and Bob met"
+
+
+def test_apply_spans_ignore_uses_nfkc_casefold() -> None:
+    text = "Visit Straße for details"
+    spans = [
+        Span(start=6, end=12, text="Straße", type="loc", detector="literal"),
+    ]
+    result = apply_spans(text, spans, lambda _s: "<LOC>", ignore=["strasse"])
+    assert result == text
+
+
 def test_apply_spans_overlap_structured_beats_ner() -> None:
     text = "Contact a@example.com today"
     spans = [
