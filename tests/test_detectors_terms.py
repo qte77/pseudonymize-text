@@ -105,6 +105,21 @@ def test_detect_terms_id_propagates_to_span() -> None:
     assert {s.id for s in spans} == {"p1"}
 
 
+@pytest.mark.parametrize("value", ["*", "*@*", "?", "**"])
+def test_load_terms_rejects_broad_patterns(tmp_path: Path, value: str) -> None:
+    csv = tmp_path / "terms.csv"
+    csv.write_text(f"value,type\n{value},name\n", encoding="utf-8")
+    with pytest.raises(ValueError, match="broad pattern"):
+        load_terms(csv)
+
+
+def test_load_terms_allow_broad_patterns_lets_them_through(tmp_path: Path) -> None:
+    csv = tmp_path / "terms.csv"
+    csv.write_text("value,type\n*,name\n", encoding="utf-8")
+    rows = load_terms(csv, allow_broad=True)
+    assert rows == [TermRow(value="*", type="name", id=None)]
+
+
 def test_load_terms_json_matches_csv_semantics(tmp_path: Path) -> None:
     j = tmp_path / "terms.json"
     j.write_text(
