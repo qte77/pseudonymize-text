@@ -8,6 +8,7 @@ fallback (clear ImportError with an install hint) run unconditionally.
 import sys
 
 import pytest
+
 from pseudonymize_text.detectors.ner import detect_ner
 
 
