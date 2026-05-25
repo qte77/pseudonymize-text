@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from pseudonymize_text.detectors.terms import TermRow, load_terms
+from pseudonymize_text.detectors.terms import TermRow, detect_terms, load_terms
 
 
 def test_load_terms_csv_required_value_only(tmp_path: Path) -> None:
@@ -43,6 +43,44 @@ def test_load_terms_unknown_extension_raises(tmp_path: Path) -> None:
     f.write_text("anything", encoding="utf-8")
     with pytest.raises(ValueError, match="terms format"):
         load_terms(f)
+
+
+def test_detect_terms_literal_word_boundary() -> None:
+    text = "Met John Doe at the conference; johnson came later."
+    terms = [TermRow(value="John Doe", type="name")]
+
+    spans = list(detect_terms(text, terms))
+
+    assert len(spans) == 1
+    assert spans[0].start == 4
+    assert spans[0].end == 12
+    assert spans[0].text == "John Doe"
+    assert spans[0].type == "name"
+    assert spans[0].detector == "literal"
+    assert spans[0].id is None
+
+
+def test_detect_terms_literal_case_insensitive() -> None:
+    text = "Alice met ALICE and alice"
+    terms = [TermRow(value="alice", type="name")]
+
+    spans = list(detect_terms(text, terms))
+
+    assert [s.start for s in spans] == [0, 10, 20]
+
+
+def test_detect_terms_id_propagates_to_span() -> None:
+    text = "John, Doe John, J. Doe"
+    terms = [
+        TermRow(value="John", type="name", id="p1"),
+        TermRow(value="Doe John", type="name", id="p1"),
+        TermRow(value="J. Doe", type="name", id="p1"),
+    ]
+
+    spans = list(detect_terms(text, terms))
+
+    # 3 matches; id="p1" on each.
+    assert {s.id for s in spans} == {"p1"}
 
 
 def test_load_terms_json_matches_csv_semantics(tmp_path: Path) -> None:
