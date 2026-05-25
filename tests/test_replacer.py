@@ -1,8 +1,68 @@
 """Tests for the replacer module (issue #9)."""
 
 import pytest
+from hypothesis import given
+from hypothesis import strategies as st
 
 from pseudonymize_text.replacer import Span, apply_spans
+
+
+def _naive_substitute(text: str, spans: list[Span], token: str) -> str:
+    """Reference impl: left-to-right walk with cursor; assumes spans are
+    non-overlapping. Used as the Hypothesis oracle."""
+    parts: list[str] = []
+    cursor = 0
+    for span in sorted(spans, key=lambda s: s.start):
+        parts.append(text[cursor : span.start])
+        parts.append(token)
+        cursor = span.end
+    parts.append(text[cursor:])
+    return "".join(parts)
+
+
+@st.composite
+def _text_and_non_overlapping_spans(draw: st.DrawFn) -> tuple[str, list[Span]]:
+    text = draw(st.text(min_size=1, max_size=50))
+    max_spans = min(3, (len(text) + 1) // 2)
+    if max_spans == 0:
+        return text, []
+    n = draw(st.integers(min_value=0, max_value=max_spans))
+    if n == 0:
+        return text, []
+    points = sorted(
+        draw(
+            st.lists(
+                st.integers(min_value=0, max_value=len(text)),
+                min_size=2 * n,
+                max_size=2 * n,
+                unique=True,
+            )
+        )
+    )
+    spans: list[Span] = []
+    for i in range(n):
+        start, end = points[2 * i], points[2 * i + 1]
+        spans.append(
+            Span(
+                start=start,
+                end=end,
+                text=text[start:end],
+                type="name",
+                detector="literal",
+            )
+        )
+    return text, spans
+
+
+@given(_text_and_non_overlapping_spans())
+def test_apply_spans_non_overlap_matches_naive_oracle(
+    args: tuple[str, list[Span]],
+) -> None:
+    text, spans = args
+    token = "<TOKEN>"
+    assert apply_spans(text, spans, lambda _s: token) == _naive_substitute(
+        text, spans, token
+    )
 
 
 def test_span_dataclass_shape() -> None:
