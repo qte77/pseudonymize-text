@@ -10,6 +10,10 @@ WHITELISTED_EXTENSIONS: frozenset[str] = frozenset(
 )
 
 
+class SymlinkEscapeError(Exception):
+    """A symlink inside ``<in_dir>`` resolves outside the input root."""
+
+
 def walk_and_process(
     in_dir: Path,
     out_dir: Path,
@@ -27,6 +31,12 @@ def walk_and_process(
     for src in in_dir.rglob("*"):
         if not src.is_file():
             continue
+        if src.is_symlink():
+            resolved = src.resolve()
+            if not resolved.is_relative_to(in_dir):
+                raise SymlinkEscapeError(
+                    f"{src} resolves to {resolved} (outside {in_dir})"
+                )
         rel = src.relative_to(in_dir)
         dst = out_dir / rel
         dst.parent.mkdir(parents=True, exist_ok=True)

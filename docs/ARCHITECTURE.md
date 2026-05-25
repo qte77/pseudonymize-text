@@ -216,6 +216,7 @@ Every I/O boundary is pinned to **one** policy. Reviewers consult this table whe
 | Mapping JSON save | `mapping.save_mapping` | `fail-loud` (disk full / permission denied propagated mid-rename; tmp file may be left behind, next save overwrites it). Tmp file is created with mode `0o600` (umask-independent) so plaintext bytes are not world-readable during the write window. |
 | Report JSONL append | `report.ReportWriter.write` | `fail-loud` (disk full / permission denied). |
 | Plan-file containment | `cli` plan loader | `fail-loud` (exit 4 if any `ReportRecord.file` contains `..`, is absolute, or resolves outside `<out_dir>`; prevents an operator-supplied plan from mirroring to arbitrary filesystem locations). |
+| Walker file enumeration | `walker.walk_and_process` | `fail-loud` (raises `SymlinkEscapeError` when a file symlink in `<in_dir>` resolves outside; UTF-8 decode errors propagate from `Path.read_text`; disk failures propagate from the atomic-write helper). Tmp output files are opened with mode `0o600` (umask-independent). |
 
 ### TDD per-behaviour discipline
 
