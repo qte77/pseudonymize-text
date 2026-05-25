@@ -46,3 +46,14 @@ def test_apply_spans_empty_returns_text_unchanged() -> None:
     text = "Hello world"
     result = apply_spans(text, [], lambda _span: "<TOKEN>")
     assert result == text
+
+
+def test_apply_spans_non_overlapping_substitutions_preserve_offsets() -> None:
+    text = "Hello John, this is Bob"
+    spans = [
+        Span(start=6, end=10, text="John", type="name", detector="literal"),
+        Span(start=20, end=23, text="Bob", type="name", detector="literal"),
+    ]
+    result = apply_spans(text, spans, lambda _s: "<NAME>")
+    assert result == "Hello <NAME>, this is <NAME>"
+
