@@ -69,6 +69,28 @@ def test_detect_terms_literal_case_insensitive() -> None:
     assert [s.start for s in spans] == [0, 10, 20]
 
 
+def test_detect_terms_wildcard_email_type() -> None:
+    text = "Contact alice@acme.com or bob@acme.com today"
+    terms = [TermRow(value="*@acme.com", type="email")]
+
+    spans = list(detect_terms(text, terms))
+
+    assert [s.text for s in spans] == ["alice@acme.com", "bob@acme.com"]
+    assert all(s.detector == "pattern" for s in spans)
+    assert all(s.type == "email" for s in spans)
+
+
+def test_detect_terms_wildcard_name_type_respects_delimiter() -> None:
+    text = "John Smith met Jane Smith at the office"
+    terms = [TermRow(value="* Smith", type="name")]
+
+    spans = list(detect_terms(text, terms))
+
+    # `*` for name type matches non-whitespace/comma/semicolon, so it
+    # captures just the immediately preceding word, not the whole phrase.
+    assert sorted(s.text for s in spans) == ["Jane Smith", "John Smith"]
+
+
 def test_detect_terms_id_propagates_to_span() -> None:
     text = "John, Doe John, J. Doe"
     terms = [
