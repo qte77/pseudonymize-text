@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.2] - 2026-05-26
+
+Pre-implementation hardening pass. Strengthens the v0.0.1 primitives and prepares the docs/governance ground for the v0.1.0 implementation work. **No new runtime functionality** — `pseudonymize` CLI is still a stub. See [roadmap](docs/roadmap.md) for what 0.1.0 will add.
+
 ### Added
 
 - `docs/ADR/`: MADR-format architectural decision records, filename pattern `ADR_###.md` (#20)
