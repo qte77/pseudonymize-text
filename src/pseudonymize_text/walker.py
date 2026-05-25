@@ -1,6 +1,7 @@
 """Folder mirror with text-file transformation (ARCHITECTURE.md → walker.py)."""
 
 import os
+import shutil
 from collections.abc import Callable
 from pathlib import Path
 
@@ -33,6 +34,8 @@ def walk_and_process(
             text = src.read_text(encoding="utf-8")
             transformed = transform(text, rel)
             _atomic_write_text(dst, transformed)
+        else:
+            shutil.copyfile(src, dst)
 
 
 def _atomic_write_text(path: Path, content: str) -> None:
