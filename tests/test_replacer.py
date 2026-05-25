@@ -1,7 +1,8 @@
 """Tests for the replacer module (issue #9)."""
 
 import pytest
-from pseudonymize_text.replacer import Span
+
+from pseudonymize_text.replacer import Span, apply_spans
 
 
 def test_span_dataclass_shape() -> None:
@@ -39,3 +40,9 @@ def test_span_is_frozen() -> None:
     span = Span(start=0, end=1, text="x", type="name", detector="literal")
     with pytest.raises((AttributeError, TypeError)):
         span.start = 5  # type: ignore[misc]
+
+
+def test_apply_spans_empty_returns_text_unchanged() -> None:
+    text = "Hello world"
+    result = apply_spans(text, [], lambda _span: "<TOKEN>")
+    assert result == text
