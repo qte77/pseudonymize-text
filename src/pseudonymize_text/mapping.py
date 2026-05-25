@@ -16,10 +16,16 @@ def load_mapping(path: Path) -> dict[str, MappingRecord]:
 
 
 def save_mapping(path: Path, mapping: dict[str, MappingRecord]) -> None:
-    """Persist ``mapping`` atomically to ``path`` via tmp file plus ``os.replace``."""
+    """Persist ``mapping`` atomically to ``path`` via tmp file plus ``os.replace``.
+
+    Tmp file is created with mode ``0o600`` so plaintext mapping bytes are not
+    world-readable during the write window (umask-independent).
+    """
     serialized = {token: rec.model_dump(mode="json") for token, rec in mapping.items()}
     tmp = path.with_name(path.name + ".tmp")
-    tmp.write_text(json.dumps(serialized, indent=2), encoding="utf-8")
+    fd = os.open(tmp, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+    with os.fdopen(fd, "w", encoding="utf-8") as fh:
+        fh.write(json.dumps(serialized, indent=2))
     os.replace(tmp, path)
 
 

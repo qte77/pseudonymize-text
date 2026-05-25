@@ -213,7 +213,7 @@ Every I/O boundary is pinned to **one** policy. Reviewers consult this table whe
 | HMAC over canonical subject | `tokenize.hmac_token` | `fail-loud` (programmer error if `kind` or `type_` is bad). |
 | Per-type canonicalization | `tokenize.canonicalize` | `fail-loud` (`ValueError` on unknown type; `phonenumbers.NumberParseException` propagated). |
 | Mapping JSON load | `mapping.load_mapping` | `fail-loud` (corrupt JSON or `ValidationError` on missing/extra fields). |
-| Mapping JSON save | `mapping.save_mapping` | `fail-loud` (disk full / permission denied propagated mid-rename; tmp file may be left behind, next save overwrites it). |
+| Mapping JSON save | `mapping.save_mapping` | `fail-loud` (disk full / permission denied propagated mid-rename; tmp file may be left behind, next save overwrites it). Tmp file is created with mode `0o600` (umask-independent) so plaintext bytes are not world-readable during the write window. |
 | Report JSONL append | `report.ReportWriter.write` | `fail-loud` (disk full / permission denied). |
 
 ### TDD per-behaviour discipline

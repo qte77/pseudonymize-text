@@ -1,3 +1,4 @@
+import os
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -74,3 +75,30 @@ def test_save_mapping_preserves_original_on_replace_failure(
         )
 
     assert mapping_path.read_bytes() == original_bytes
+
+
+def test_save_mapping_tmp_file_mode_is_0600(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    t = datetime(2026, 5, 22, 14, 0, 0, tzinfo=UTC)
+    fields = {"value": "John Doe", "canonical": "john doe", "type": "name", "id": "p1"}
+    mapping_path = tmp_path / "mapping.json"
+    captured: list[int] = []
+    real_replace = os.replace
+
+    def capture_then_replace(src: str | os.PathLike[str], dst: str | os.PathLike[str]) -> None:
+        captured.append(Path(src).stat().st_mode & 0o777)
+        real_replace(src, dst)
+
+    monkeypatch.setattr("os.replace", capture_then_replace)
+
+    save_mapping(
+        mapping_path,
+        {
+            "<NAME:abc>": MappingRecord(
+                **fields, first_seen=t, last_seen=t, occurrences=1
+            ),
+        },
+    )
+
+    assert captured == [0o600]
