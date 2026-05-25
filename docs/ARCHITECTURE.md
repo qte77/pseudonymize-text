@@ -149,7 +149,7 @@ The first line of a report is a header object: `{"schema": "...", "tool_version"
 | Aspect | Behavior |
 |---|---|
 | Symlinks (dirs) | Not followed by default. |
-| Symlinks (files) | Resolved and processed (target read once). |
+| Symlinks (files) | Resolved; resolved path must remain under `<in_dir>` (else exit `6`). Target read once. |
 | Hidden files (`.*`) | Processed. |
 | Whitelisted extensions | Read as UTF-8, processed, written to mirrored path. |
 | Other extensions | Copied byte-for-byte to mirrored path. |
@@ -200,6 +200,7 @@ Every I/O boundary is pinned to **one** policy. Reviewers consult this table whe
 | Mapping JSON load | `mapping.load_mapping` | `fail-loud` (corrupt JSON or `ValidationError` on missing/extra fields). |
 | Mapping JSON save | `mapping.save_mapping` | `fail-loud` (disk full / permission denied propagated mid-rename; tmp file may be left behind, next save overwrites it). |
 | Report JSONL append | `report.ReportWriter.write` | `fail-loud` (disk full / permission denied). |
+| Plan-file containment | `cli` plan loader | `fail-loud` (exit 4 if any `ReportRecord.file` contains `..`, is absolute, or resolves outside `<out_dir>`; prevents an operator-supplied plan from mirroring to arbitrary filesystem locations). |
 
 ### TDD per-behaviour discipline
 
