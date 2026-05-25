@@ -1,6 +1,6 @@
 [project]
 name = "pseudonymize-text"
-version = "0.0.1"
+version = "0.0.2"
 description = "Bulk-pseudonymize sensitive entities in text across folder trees with HMAC-keyed deterministic tokens."
 readme = "README.md"
 requires-python = ">=3.11"
