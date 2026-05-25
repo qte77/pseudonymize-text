@@ -1,6 +1,9 @@
 from datetime import UTC, datetime
 from pathlib import Path
 
+import pytest
+from pydantic import ValidationError
+
 from pseudonymize_text._schemas import ReportHeader, ReportRecord
 from pseudonymize_text.report import ReportWriter
 
@@ -10,7 +13,7 @@ def _header() -> ReportHeader:
         schema="pseudonymize.report/1",
         tool_version="0.0.1",
         started_at=datetime(2026, 5, 22, 14, 0, 0, tzinfo=UTC),
-        config_hash="deadbeef",
+        config_hash="deadbeefcafef00d0123456789abcdef",
     )
 
 
@@ -29,6 +32,16 @@ def _record() -> ReportRecord:
         confidence=None,
         context="John Doe",
     )
+
+
+def test_report_header_config_hash_rejects_non_hex() -> None:
+    with pytest.raises(ValidationError):
+        ReportHeader(
+            schema="pseudonymize.report/1",
+            tool_version="0.0.1",
+            started_at=datetime(2026, 5, 22, 14, 0, 0, tzinfo=UTC),
+            config_hash="not-hex",
+        )
 
 
 def test_report_writer_writes_header_once(tmp_path: Path) -> None:
