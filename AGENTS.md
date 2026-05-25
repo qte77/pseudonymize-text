@@ -29,6 +29,11 @@ Read in this order; do not duplicate their content into new files.
   when a structural change in an earlier cycle already covers a behaviour.
 - **Mapping file and HMAC key are never co-located with output.** Enforced by docs,
   not code — agents proposing changes that violate this must justify in the PR body.
+- **Never read, log, or echo secret artefacts.** Files matching `.key` / `*.key`,
+  the `PSEUDONYMIZE_KEY` env var, `pseudonymize-mapping.json`, and
+  `pseudonymize-report.jsonl` are off-limits to agent context. Agent context windows
+  are logged and persisted; ingesting these files is equivalent to exfiltrating
+  them. Includes never writing secret values to anything under `~/.claude/`.
 
 ## Commands
 

@@ -24,3 +24,9 @@
 .kilocode/
 .mcp.json
 MEMORY.md
+
+# Pseudonymize artefacts (HMAC key, mapping, report) — never commit
+.key
+*.key
+pseudonymize-mapping.json
+pseudonymize-report.jsonl
