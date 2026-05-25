@@ -20,6 +20,7 @@
 src/pseudonymize_text/
   cli.py            # argparse entry; detect / apply subcommands
   walker.py         # mirror in/ → out/, extension whitelist
+  formats/          # .eml / .mbox readers and writers (see ADR_002)
   detectors/
     terms.py        # literals + id-grouping + wildcards (CSV/JSON loader)
     structured.py   # email, phone, iban, cc, ssn
@@ -173,7 +174,21 @@ This guarantees a curated `terms.csv` entry always overrides a structured or NER
 
 ## Default File Extensions
 
-`.txt .md .log .py .json .yaml .yml .csv .toml .ini` — read/write as UTF-8. Anything else is copied through unchanged. PDF and Office formats are deferred.
+`.txt .md .log .py .json .yaml .yml .csv .toml .ini` — read/write as UTF-8. `.eml` and `.mbox` are routed through the formats layer (see [Mail-format support](#mail-format-support) below). Anything else is copied through unchanged. PDF and Office formats are deferred.
+
+## Mail-format support
+
+`.eml` and `.mbox` inputs are handled by `formats/` rather than the default UTF-8 read path. Per [ADR_002](ADR/ADR_002.md):
+
+| Part | Fate |
+|---|---|
+| Headers (`From`, `To`, `Cc`, `Bcc`, `Subject`, `Reply-To`, incl. RFC 2047 encoded) | Decoded, pseudonymized, re-encoded. |
+| `text/plain` parts | Decoded (transfer encoding + charset), pseudonymized, re-encoded. |
+| `text/html` parts | Same as `text/plain`. Detector strategy is settled in `detectors/structured.py` ([#11](https://github.com/qte77/pseudonymize-text/issues/11)). |
+| Other MIME parts (binary attachments, inline images, S/MIME, `application/*`) | **Dropped.** Replaced by a `text/plain` stub: `[part removed by pseudonymize: <Content-Type>; <N> bytes]`. |
+| `DKIM-Signature`, `ARC-*` headers | Stripped (signatures are invalid after step 1). |
+
+`.mbox` inputs fan out to per-message `.eml` files at `<out_dir>/<basename>/<seq>.eml`; no mbox re-assembly. Rationale and full consequences: [ADR_002](ADR/ADR_002.md).
 
 ## What's deferred
 
