@@ -63,6 +63,44 @@ def test_walker_dir_symlink_not_followed(tmp_path: Path) -> None:
     assert not (out_dir / "link").exists()
 
 
+def _build_multipart_eml() -> bytes:
+    """RFC 5322 multipart: text/plain + DKIM header + binary attachment."""
+    from email.message import EmailMessage
+
+    msg = EmailMessage()
+    msg["From"] = "Alice <alice@example.com>"
+    msg["To"] = "Bob <bob@example.com>"
+    msg["Subject"] = "hello"
+    msg["DKIM-Signature"] = "v=1; a=rsa-sha256; d=example.com; s=mail; b=fake"
+    msg.set_content("plaintext body about alice@example.com")
+    msg.add_attachment(
+        b"\x89PNG\r\n\x1a\n", maintype="image", subtype="png", filename="x.png",
+    )
+    return bytes(msg)
+
+
+def test_walker_eml_text_pseudonymized_binary_dropped_dkim_stripped(
+    tmp_path: Path,
+) -> None:
+    in_dir = tmp_path / "in"
+    out_dir = tmp_path / "out"
+    in_dir.mkdir()
+    (in_dir / "msg.eml").write_bytes(_build_multipart_eml())
+
+    walk_and_process(
+        in_dir, out_dir, lambda text, _p: text.replace("alice@example.com", "<EMAIL>"),
+    )
+
+    out_bytes = (out_dir / "msg.eml").read_bytes()
+    out_text = out_bytes.decode("utf-8", errors="replace")
+
+    assert "<EMAIL>" in out_text
+    assert "alice@example.com" not in out_text
+    assert "DKIM-Signature" not in out_text
+    assert b"\x89PNG" not in out_bytes
+    assert "part removed by pseudonymize" in out_text
+
+
 def test_walker_atomic_write_tmp_file_mode_is_0600(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
