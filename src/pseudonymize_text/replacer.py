@@ -28,16 +28,17 @@ def apply_spans(
 ) -> str:
     """Return ``text`` with each accepted span replaced by ``get_token(span)``.
 
-    Empty span input returns ``text`` unchanged. Substitution semantics
-    (precedence, length-tiebreak, ignore-list, right-to-left rewrite) are
-    introduced incrementally by subsequent Red/Green cycles.
+    Substitution is single-pass and right-to-left: spans are processed in
+    descending ``start`` order so each replacement leaves earlier offsets
+    valid. Empty span input returns ``text`` unchanged.
+
+    Overlap precedence (literal > structured > NER, longer wins) and
+    ``--ignore`` suppression are introduced in later Red/Green cycles.
     """
-    spans_list = list(spans)
-    if not spans_list:
+    ordered = sorted(spans, key=lambda s: s.start, reverse=True)
+    if not ordered:
         return text
-    # R3 will introduce right-to-left substitution; for now the contract
-    # is only pinned for the empty-span case.
-    raise NotImplementedError(
-        f"apply_spans for {len(spans_list)} span(s) using {get_token!r} "
-        "lands in R3"
-    )
+    result = text
+    for span in ordered:
+        result = result[: span.start] + get_token(span) + result[span.end :]
+    return result
