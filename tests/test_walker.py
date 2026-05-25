@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 
-from pseudonymize_text.walker import walk_and_process
+from pseudonymize_text.walker import SymlinkEscapeError, walk_and_process
 
 
 def test_walker_whitelisted_text_file_transformed(tmp_path: Path) -> None:
@@ -29,6 +29,20 @@ def test_walker_non_whitelisted_file_byte_copied(tmp_path: Path) -> None:
     walk_and_process(in_dir, out_dir, lambda text, _path: text.upper())
 
     assert (out_dir / "image.png").read_bytes() == raw
+
+
+def test_walker_file_symlink_escape_raises(tmp_path: Path) -> None:
+    in_dir = tmp_path / "in"
+    out_dir = tmp_path / "out"
+    in_dir.mkdir()
+    outside = tmp_path / "outside.txt"
+    outside.write_text("secret", encoding="utf-8")
+    (in_dir / "escape.txt").symlink_to(outside)
+
+    with pytest.raises(SymlinkEscapeError):
+        walk_and_process(in_dir, out_dir, lambda text, _p: text)
+
+    assert not (out_dir / "escape.txt").exists()
 
 
 def test_walker_dir_symlink_not_followed(tmp_path: Path) -> None:
