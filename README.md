@@ -2,6 +2,13 @@
 
 Bulk-pseudonymize sensitive entities (names, emails, phones, IBANs, SSNs, credit cards, addresses, organizations) across a folder tree — deterministically and reversibly.
 
+[![License](https://img.shields.io/badge/license-Apache--2.0-58f4c2.svg)](LICENSE)
+![Version](https://img.shields.io/badge/version-0.0.1-58f4c2.svg)
+[![CodeFactor](https://www.codefactor.io/repository/github/qte77/pseudonymize-text/badge)](https://www.codefactor.io/repository/github/qte77/pseudonymize-text)
+[![python](https://github.com/qte77/pseudonymize-text/actions/workflows/python.yaml/badge.svg)](https://github.com/qte77/pseudonymize-text/actions/workflows/python.yaml)
+[![markdownlint](https://github.com/qte77/pseudonymize-text/actions/workflows/markdownlint.yaml/badge.svg)](https://github.com/qte77/pseudonymize-text/actions/workflows/markdownlint.yaml)
+[![links](https://github.com/qte77/pseudonymize-text/actions/workflows/links.yaml/badge.svg)](https://github.com/qte77/pseudonymize-text/actions/workflows/links.yaml)
+
 - **Deterministic** — same input + same key → same token, every run, every machine.
 - **Reversible** via the mapping file (kept separate from output and key).
 - **GDPR/ENISA-aligned** — HMAC-SHA256 with secret key, namespaced per entity type; mapping and key never co-located with output. See [docs/COMPLIANCE.md](docs/COMPLIANCE.md).
@@ -42,6 +49,8 @@ PSEUDONYMIZE_KEY=$(cat .key) \
 | [docs/COMPLIANCE.md](docs/COMPLIANCE.md) | GDPR / ENISA / EDPB / NIST posture |
 | [docs/SECURITY.md](docs/SECURITY.md) | Threat model, key & mapping handling |
 | [docs/HASHING.md](docs/HASHING.md) | Token construction, canonicalization, stability — design rationale |
+| [AGENTS.md](AGENTS.md) | Behavioral rules for AI coding agents |
+| [CHANGELOG.md](CHANGELOG.md) | Version history (Keep-a-Changelog) |
 
 ## License
 
