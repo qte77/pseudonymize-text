@@ -49,6 +49,7 @@ PSEUDONYMIZE_KEY=$(cat .key) \
 | [docs/COMPLIANCE.md](docs/COMPLIANCE.md) | GDPR / ENISA / EDPB / NIST posture |
 | [docs/SECURITY.md](docs/SECURITY.md) | Threat model, key & mapping handling |
 | [docs/HASHING.md](docs/HASHING.md) | Token construction, canonicalization, stability — design rationale |
+| [docs/ADR/](docs/ADR/) | Architectural decisions ([MADR](https://adr.github.io/madr/) format) |
 | [AGENTS.md](AGENTS.md) | Behavioral rules for AI coding agents |
 | [CHANGELOG.md](CHANGELOG.md) | Version history (Keep-a-Changelog) |
 
