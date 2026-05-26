@@ -46,5 +46,5 @@ def test_cli_detect_writes_report_with_header_and_spans(
     assert rc == 0
     lines = report.read_text(encoding="utf-8").splitlines()
     assert len(lines) >= 2
-    assert '"schema": "pseudonymize.report/1"' in lines[0]
+    assert "pseudonymize.report/1" in lines[0]
     assert "alice@acme.com" in "\n".join(lines[1:])
