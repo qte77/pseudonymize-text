@@ -11,7 +11,45 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [0.0.2] - 2026-05-26
+## [0.1.0] - 2026-05-26
+
+First implementation cut. `pseudonymize detect` / `pseudonymize apply` now wire walker → detectors → replacer → tokenize → mapping → report end-to-end against text trees and `.eml` / `.mbox` mail corpora. README quickstart is real, not aspirational.
+
+### Added
+
+- `src/pseudonymize_text/replacer.py`: `Span` dataclass + `apply_spans(text, spans, get_token, ignore=())` — pure span dedup (literal > structured > NER precedence, longest wins) + NFKC-casefold `--ignore` suppression + right-to-left single-pass substitution (#28).
+- `src/pseudonymize_text/walker.py`: `walk_and_process(in_dir, out_dir, transform)` mirrors the input tree, routes whitelisted text through `transform`, byte-copies non-whitelisted, raises `SymlinkEscapeError` on file-symlink escapes (#29). `.mbox` extension recognised and dispatched (#40).
+- `src/pseudonymize_text/formats/`: `process_eml` per ADR_002 — strips DKIM/ARC headers, pseudonymises `From`/`To`/`Cc`/`Bcc`/`Subject`/`Reply-To`, pseudonymises every `text/plain` + `text/html` part, replaces every other part with a `[part removed by pseudonymize: <ctype>; <N> bytes]` stub (#29). `process_mbox` fans out one input mbox into one `.eml` per message under `<out_dir>/<basename>/<seq>.eml`, sharing the per-message helper `transform_message` so the ADR_002 contract cannot drift between `.eml` and `.mbox` (#40).
+- `src/pseudonymize_text/detectors/terms.py`: `TermRow` dataclass; `load_terms(path, *, allow_broad=False)` (CSV + JSON, broad-pattern guard rejecting `*` / `*@*` / `?` / `**`); `detect_terms(text, terms)` with `\b…\b` Unicode word boundaries, case-insensitive matching, type-aware wildcard expansion (`*@*` for email, `\d+` for IDs, etc.), `id`-grouping (#30).
+- `src/pseudonymize_text/lint_terms.py` + `make lint_terms`: standalone validator that runs `load_terms`, exits non-zero on any rejected pattern; shares the helper with the runtime detector so lint and detector cannot disagree (#30).
+- `src/pseudonymize_text/detectors/structured.py`: `detect_emails`, `detect_phones` (via `phonenumberslite`), `detect_ibans` (mod-97 via `python-stdnum`), `detect_credit_cards` (Luhn via `python-stdnum`), `detect_ssns` (strict US `NNN-NN-NNNN`). All canonicalisation stays in `tokenize.canonicalize` per HASHING.md §8 (#31).
+- `src/pseudonymize_text/detectors/ner.py`: optional spaCy adapter (`detect_ner`) gated behind the `[ner]` extra. Lazy import; clear `ImportError` with install hint when spaCy missing. Maps PERSON / ORG / GPE / LOC → `name` / `org` / `loc` (#32).
+- `docs/ner-install.md`: hash-pinned model install procedure for `xx_ent_wiki_sm==3.7.0`; `spacy download` is documented as a supply-chain hazard (#32).
+- `src/pseudonymize_text/cli.py`: complete rewrite from stub. `pseudonymize detect <in_dir>` walks + detects + writes report; `pseudonymize apply <in_dir> <out_dir>` walks + detects + substitutes + writes mapping (#34). `apply --plan FILE` rehydrates spans from a prior report with config_hash + path-traversal validation (#36). `--ignore` file loader (NFKC + strip Unicode `Cf` / non-ASCII `Zs`); `--detectors LIST` / `--types LIST` filters; `--ner` flag (#38). `--report-format tsv` with per-cell formula-injection prefix on cells starting with `= + - @`; context bidi/zero-width strip; `PSEUDONYMIZE_MAX_FILE_BYTES` size cap (default 256 MB, exit 6 on overrun) (#39).
+- `src/pseudonymize_text/report.py`: `TsvReportWriter` alongside the existing JSONL `ReportWriter` (#39).
+- `tests/fixtures/`: shared corpus + `terms.csv` (#35).
+- `tests/test_e2e.py`: detect + apply end-to-end smoke against the fixture corpus (#35).
+- `Makefile`: `--cov=src/pseudonymize_text --cov-fail-under=80` on `test` (#35). `--no-cache` on the lint step so local matches CI (#33).
+- `.github/workflows/python.yaml`: matching `--cov` / `--no-cache` (#35, #33).
+- `README.md`: "Related projects" section with a 3-row table comparing `microsoft/presidio`, `BCHSI/philter-ucsf`, and this project (#37).
+- `hypothesis>=6.0` in the dev dependency group; property test for replacer's right-to-left substitution against a naive cursor oracle (#28).
+
+### Security
+
+- `cli`: `--mapping` and `--report` paths inside `<out_dir>` rejected with exit 7 (#34).
+- `cli`: `apply --plan` config_hash mismatch exits 7; plan-file `ReportRecord.file` containing `..` / absolute / outside-`<in_dir>` exits 4 — structure-checked before crypto check so a malicious plan with a matching key still fails path safety (#36).
+- `cli`: TSV report cells whose first char is `= + - @` get a leading single quote, defeating Excel / LibreOffice formula execution on import (#39).
+- `cli`: `ReportRecord.context` is stripped of U+200B–U+200F (zero-width family), U+202A–U+202E (LRE/RLE/PDF/LRO/RLO), U+2060–U+2069 (word joiner range) before being written, blocking Trojan-Source-style display reordering in any JSONL/TSV viewer (#39).
+- `cli`: per-file size cap `PSEUDONYMIZE_MAX_FILE_BYTES` (default 256 MB) prevents multi-GB inputs from exhausting memory; exit 6 on overrun (#39).
+- `detectors/terms`: broad-pattern guard rejects `*` / `*@*` / `?` / `**` at load time; bundled `make lint_terms` runs the same check ahead of time for CI / pre-commit (#30).
+- `tests`: bidi/zero-width characters in test_cli.py spelled as `\uXXXX` escapes rather than literal source bytes, removing Trojan Source (CVE-2021-42574) exposure on the source file itself (#39).
+
+### Changed
+
+- `docs/ARCHITECTURE.md`: boundary-failure-policy table extended with five new rows — `walker.walk_and_process`, `detectors.terms.load_terms`, `detectors.structured.detect_*` (wrap-continue), `detectors.ner.detect_ner`, and `cli` plan loader.
+- `docs/USAGE.md`: `--report PATH` flag documents containment rule (#25, pre-implementation; enforced in code in #34).
+
+
 
 Pre-implementation hardening pass. Strengthens the v0.0.1 primitives and prepares the docs/governance ground for the v0.1.0 implementation work. **No new runtime functionality** — `pseudonymize` CLI is still a stub. See [roadmap](docs/roadmap.md) for what 0.1.0 will add.
 
