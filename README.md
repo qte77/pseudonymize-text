@@ -53,6 +53,16 @@ PSEUDONYMIZE_KEY=$(cat .key) \
 | [AGENTS.md](AGENTS.md) | Behavioral rules for AI coding agents |
 | [CHANGELOG.md](CHANGELOG.md) | Version history (Keep-a-Changelog) |
 
+## Related projects
+
+If `pseudonymize-text` is the wrong fit, two well-established alternatives target adjacent problems. Honest summary; pick based on the problem, not the marketing.
+
+| Project | License | Stance |
+|---|---|---|
+| [microsoft/presidio](https://github.com/microsoft/presidio) | MIT | Python-native PII detection + de-identification; covers PHI, financial PII, and generic PII. Pairs with spaCy backends. One-way by default (hash operator uses random salt); reversibility via the encrypt operator requires separate AES key management. |
+| [BCHSI/philter-ucsf](https://github.com/BCHSI/philter-ucsf) | BSD-3-Clause | Rule-based clinical-note de-identifier; HIPAA Safe Harbor coverage. Redacts text; not reversible. |
+| [qte77/pseudonymize-text](https://github.com/qte77/pseudonymize-text) | Apache-2.0 | By the same author; bulk-pseudonymizes names, emails, phones, IBANs, SSNs, credit cards, and organizations across folder trees. **Deterministic** (HMAC-SHA256 + secret key, namespaced per entity type) and **reversible** (mapping file kept separate from output + key). Audit-first two-step CLI: `detect` writes a JSONL plan; `apply` executes byte-identically. GDPR/ENISA/EDPB/NIST framing. Lightweight (stdlib + `python-stdnum` + `phonenumberslite`); optional spaCy via `[ner]` extra. Status: v0.0.2 ("Planning") — do not take a production dependency; pin to a specific git commit until ≥0.1. |
+
 ## License
 
 Apache-2.0. See [LICENSE](LICENSE) and [NOTICE](NOTICE).
