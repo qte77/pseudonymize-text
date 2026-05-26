@@ -28,6 +28,45 @@ def test_cli_detect_missing_key_exits_3(
     assert main(["detect", str(in_dir), "--no-terms"]) == 3
 
 
+def test_cli_apply_mapping_inside_out_dir_exits_7(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    in_dir = tmp_path / "in"
+    out_dir = tmp_path / "out"
+    in_dir.mkdir()
+    (in_dir / "a.txt").write_text("hi", encoding="utf-8")
+    monkeypatch.setenv("PSEUDONYMIZE_KEY", "ab" * 32)
+    bad_mapping = out_dir / "mapping.json"
+    rc = main(
+        [
+            "apply", str(in_dir), str(out_dir),
+            "--no-terms",
+            "--mapping", str(bad_mapping),
+        ]
+    )
+    assert rc == 7
+    assert not out_dir.exists() or not bad_mapping.exists()
+
+
+def test_cli_apply_report_inside_out_dir_exits_7(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    in_dir = tmp_path / "in"
+    out_dir = tmp_path / "out"
+    in_dir.mkdir()
+    (in_dir / "a.txt").write_text("hi", encoding="utf-8")
+    monkeypatch.setenv("PSEUDONYMIZE_KEY", "ab" * 32)
+    bad_report = out_dir / "report.jsonl"
+    rc = main(
+        [
+            "apply", str(in_dir), str(out_dir),
+            "--no-terms",
+            "--report", str(bad_report),
+        ]
+    )
+    assert rc == 7
+
+
 def test_cli_apply_writes_substituted_output_and_mapping(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
