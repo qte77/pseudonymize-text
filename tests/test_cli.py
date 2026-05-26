@@ -79,7 +79,7 @@ def test_cli_apply_ignore_file_with_unicode_cleanup_suppresses_match(
     terms.write_text("value,type\nStraße,loc\n", encoding="utf-8")
     ignore = tmp_path / "ignore.txt"
     # Zero-width space inside the entry must be stripped by NFKC + Cf cleanup.
-    ignore.write_text("Stras​se\n", encoding="utf-8")
+    ignore.write_text("Stras\u200b" "se\n", encoding="utf-8")
     monkeypatch.setenv("PSEUDONYMIZE_KEY", "ab" * 32)
 
     rc = main(
@@ -94,7 +94,7 @@ def test_cli_apply_ignore_file_with_unicode_cleanup_suppresses_match(
 
     assert rc == 0
     written = (tmp_path / "out" / "a.txt").read_text(encoding="utf-8")
-    # Ignore entry "Stras​se" → NFKC+casefold+Cf-strip → "strasse"
+    # Ignore entry "Stras\u200b" "se" → NFKC+casefold+Cf-strip → "strasse"
     # → equals casefold(NFKC("Straße")) so the span is suppressed.
     assert "Straße" in written
     assert "<LOC:" not in written
@@ -178,6 +178,87 @@ def test_cli_ner_flag_off_by_default_does_not_invoke_spacy(
     # If --ner were on, the import would fail with ExitCode 5 because spacy
     # is shadowed to None. Off-by-default means rc=0.
     assert rc == 0
+
+
+def test_cli_detect_tsv_format_writes_header_and_rows(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    in_dir = tmp_path / "in"
+    in_dir.mkdir()
+    (in_dir / "a.txt").write_text(
+        "Mail alice@acme.com today", encoding="utf-8"
+    )
+    report = tmp_path / "report.tsv"
+    monkeypatch.setenv("PSEUDONYMIZE_KEY", "ab" * 32)
+
+    rc = main(
+        [
+            "detect", str(in_dir),
+            "--no-terms",
+            "--report", str(report),
+            "--report-format", "tsv",
+        ]
+    )
+    assert rc == 0
+    lines = report.read_text(encoding="utf-8").splitlines()
+    assert lines[0].startswith("# "), "first line is the metadata comment"
+    columns = lines[1].split("\t")
+    assert "text" in columns
+    assert "context" in columns
+    assert any("alice@acme.com" in line for line in lines[2:])
+    # Every data cell that begins with a formula char must be prefixed.
+    for line in lines[2:]:
+        for cell in line.split("\t"):
+            assert not cell.startswith(("=", "+", "-", "@")), (
+                f"unprefixed formula-leading cell: {cell!r}"
+            )
+
+
+def test_cli_detect_context_strips_bidi_and_zero_width(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    in_dir = tmp_path / "in"
+    in_dir.mkdir()
+    # ZWSP + RLO around an email; both must be stripped from `context`
+    # before the record is written. Bidi/zero-width chars are spelled as
+    # `\uXXXX` escapes here so this source file itself has no literal
+    # control characters (CodeFactor / CVE-2021-42574 "Trojan Source").
+    zwsp = "\u200b"
+    rlo = "\u202e"
+    pdi = "\u202c"
+    lro = "\u202d"
+    (in_dir / "a.txt").write_text(
+        f"Contact {zwsp}{rlo}alice@acme.com{pdi} soon", encoding="utf-8"
+    )
+    report = tmp_path / "r.jsonl"
+    monkeypatch.setenv("PSEUDONYMIZE_KEY", "ab" * 32)
+
+    rc = main(
+        ["detect", str(in_dir), "--no-terms", "--report", str(report)]
+    )
+    assert rc == 0
+    import json as _json
+
+    records = [_json.loads(line) for line in report.read_text().splitlines()[1:]]
+    assert records, "expected at least one record"
+    for r in records:
+        for bad in (zwsp, pdi, lro, rlo):
+            assert bad not in r["context"], f"{bad!r} survived in context"
+
+
+def test_cli_detect_oversize_file_exits_6(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    in_dir = tmp_path / "in"
+    in_dir.mkdir()
+    (in_dir / "huge.txt").write_text("x" * 1024, encoding="utf-8")
+    monkeypatch.setenv("PSEUDONYMIZE_KEY", "ab" * 32)
+    monkeypatch.setenv("PSEUDONYMIZE_MAX_FILE_BYTES", "10")
+
+    rc = main(
+        ["detect", str(in_dir), "--no-terms", "--report", str(tmp_path / "r.jsonl")]
+    )
+    assert rc == 6
 
 
 def test_cli_apply_with_plan_uses_only_plan_spans(
