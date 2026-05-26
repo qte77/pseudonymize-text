@@ -28,6 +28,36 @@ def test_cli_detect_missing_key_exits_3(
     assert main(["detect", str(in_dir), "--no-terms"]) == 3
 
 
+def test_cli_apply_writes_substituted_output_and_mapping(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    in_dir = tmp_path / "in"
+    out_dir = tmp_path / "out"
+    in_dir.mkdir()
+    (in_dir / "a.txt").write_text(
+        "Contact alice@acme.com soon", encoding="utf-8"
+    )
+    mapping = tmp_path / "mapping.json"
+    report = tmp_path / "report.jsonl"
+    monkeypatch.setenv("PSEUDONYMIZE_KEY", "ab" * 32)
+
+    rc = main(
+        [
+            "apply", str(in_dir), str(out_dir),
+            "--no-terms",
+            "--mapping", str(mapping),
+            "--report", str(report),
+        ]
+    )
+
+    assert rc == 0
+    written = (out_dir / "a.txt").read_text(encoding="utf-8")
+    assert "alice@acme.com" not in written
+    assert "<EMAIL:" in written
+    assert mapping.exists()
+    assert "alice@acme.com" in mapping.read_text(encoding="utf-8")
+
+
 def test_cli_detect_writes_report_with_header_and_spans(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
