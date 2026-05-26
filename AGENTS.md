@@ -15,7 +15,7 @@ Read in this order; do not duplicate their content into new files.
 - [docs/HASHING.md](docs/HASHING.md) — token construction, canonicalization, stability matrix.
 - [docs/SECURITY.md](docs/SECURITY.md) — threat model, key + mapping handling.
 - [docs/COMPLIANCE.md](docs/COMPLIANCE.md) — GDPR / ENISA / EDPB / NIST posture.
-- [docs/ADR/](docs/ADR/) — accepted architectural decisions ([MADR](https://adr.github.io/madr/) format, files `ADR_###.md`). Cite by number when a change implements or supersedes one.
+- [docs/decisions/](docs/decisions/) — accepted architectural decisions ([MADR](https://adr.github.io/madr/) format, files `ADR_###.md`). Cite by number when a change implements or supersedes one.
 
 ## Non-negotiable rules
 
