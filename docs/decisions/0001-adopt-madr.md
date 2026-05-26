@@ -27,16 +27,16 @@ both decay together. A separate, append-only log is needed.
 
 ## Decision Outcome
 
-Chosen: **MADR 4** with light deviations.
+Chosen: **MADR 4** with canonical layout.
 
 * Location: `docs/decisions/` (per MADR canonical layout; renamed from `docs/ADR/` 2026-05-26).
-* Filename: `ADR_###.md` (zero-padded numeric, title kept inside the document). Note: canonical MADR uses `NNNN-title.md`; the `ADR_###` deviation is retained because filenames are cited by number across source/tests/CHANGELOG.
+* Filename: `NNNN-title.md` (per MADR canonical layout; renamed from `ADR_###.md` 2026-05-26).
 * Frontmatter: only `status` and `date`; Jekyll-specific fields omitted.
+* Citation: by decision number (`ADR_NNN`) in source/tests/CHANGELOG, independent of filename. Filename may change if a title is refined; citations do not.
 
 ### Consequences
 
 * Good — decisions are referenceable from issues, PRs, and
   [ARCHITECTURE.md](../ARCHITECTURE.md).
 * Good — append-only; no merge conflicts on "what changed".
-* Bad — filenames don't carry titles, so readers must open the file to learn
-  the subject. Accepted trade-off: filenames stay stable when titles refine.
+* Good — filenames carry the title (per canonical MADR), so the decision subject is visible in directory listings.

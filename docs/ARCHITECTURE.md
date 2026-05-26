@@ -178,7 +178,7 @@ This guarantees a curated `terms.csv` entry always overrides a structured or NER
 
 ## Mail-format support
 
-`.eml` and `.mbox` inputs are handled by `formats/` rather than the default UTF-8 read path. Per [ADR_002](decisions/ADR_002.md):
+`.eml` and `.mbox` inputs are handled by `formats/` rather than the default UTF-8 read path. Per [ADR_002](decisions/0002-mail-part-handling.md):
 
 | Part | Fate |
 |---|---|
@@ -188,7 +188,7 @@ This guarantees a curated `terms.csv` entry always overrides a structured or NER
 | Other MIME parts (binary attachments, inline images, S/MIME, `application/*`) | **Dropped.** Replaced by a `text/plain` stub: `[part removed by pseudonymize: <Content-Type>; <N> bytes]`. |
 | `DKIM-Signature`, `ARC-*` headers | Stripped (signatures are invalid after step 1). |
 
-`.mbox` inputs fan out to per-message `.eml` files at `<out_dir>/<basename>/<seq>.eml`; no mbox re-assembly. Rationale and full consequences: [ADR_002](decisions/ADR_002.md).
+`.mbox` inputs fan out to per-message `.eml` files at `<out_dir>/<basename>/<seq>.eml`; no mbox re-assembly. Rationale and full consequences: [ADR_002](decisions/0002-mail-part-handling.md).
 
 ## What's deferred
 
