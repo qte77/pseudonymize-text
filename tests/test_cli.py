@@ -122,9 +122,12 @@ def test_cli_detectors_filter_excludes_structured(
         ]
     )
     assert rc == 0
-    body = report.read_text(encoding="utf-8")
-    assert "John Doe" in body
-    assert "alice@acme.com" not in body
+    import json as _json
+
+    records = [_json.loads(line) for line in report.read_text().splitlines()[1:]]
+    detectors_used = {r["detector"] for r in records}
+    assert detectors_used == {"literal"}
+    assert any(r["text"] == "John Doe" for r in records)
 
 
 def test_cli_types_filter_keeps_only_named_types(
@@ -147,9 +150,11 @@ def test_cli_types_filter_keeps_only_named_types(
         ]
     )
     assert rc == 0
-    body = report.read_text(encoding="utf-8")
-    assert "alice@acme.com" in body
-    assert "123-45-6789" not in body
+    import json as _json
+
+    records = [_json.loads(line) for line in report.read_text().splitlines()[1:]]
+    types_seen = {r["type"] for r in records}
+    assert types_seen == {"email"}
 
 
 def test_cli_ner_flag_off_by_default_does_not_invoke_spacy(
