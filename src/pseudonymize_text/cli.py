@@ -26,7 +26,7 @@ from .detectors.structured import (
 from .detectors.terms import detect_terms, load_terms
 from .mapping import save_mapping, upsert
 from .replacer import Span, apply_spans
-from .report import ReportWriter
+from .report import ReportWriter, TsvReportWriter
 from .tokenize import canonicalize, hmac_token
 from .walker import WHITELISTED_EXTENSIONS, walk_and_process
 
@@ -48,6 +48,9 @@ def _build_parser() -> argparse.ArgumentParser:
     common.add_argument("--no-terms", action="store_true")
     common.add_argument("--key-file", type=Path)
     common.add_argument("--report", type=Path, default=Path("./pseudonymize-report.jsonl"))
+    common.add_argument(
+        "--report-format", choices=("jsonl", "tsv"), default="jsonl"
+    )
     common.add_argument("--ignore", type=Path)
     common.add_argument(
         "--detectors",
@@ -305,6 +308,22 @@ def _line_col(text: str, offset: int) -> tuple[int, int]:
     return line, col
 
 
+_BIDI_AND_ZW: frozenset[str] = frozenset(
+    chr(c) for c in (
+        *range(0x200B, 0x2010),  # ZWSP, ZWNJ, ZWJ, LRM, RLM, LRE, RLE, PDF, LRO
+        0x202A, 0x202B, 0x202C, 0x202D, 0x202E,  # LRE/RLE/PDF/LRO/RLO
+        *range(0x2060, 0x206A),  # word joiner, function application, etc.
+    )
+)
+
+
+def _strip_bidi(text: str) -> str:
+    """Strip bidi-override and zero-width chars from display strings."""
+    if not any(ch in _BIDI_AND_ZW for ch in text):
+        return text
+    return "".join(ch for ch in text if ch not in _BIDI_AND_ZW)
+
+
 def _context(text: str, start: int, end: int, radius: int = 40) -> str:
     line_start = text.rfind("\n", 0, start) + 1
     line_end = text.find("\n", end)
@@ -312,7 +331,26 @@ def _context(text: str, start: int, end: int, radius: int = 40) -> str:
         line_end = len(text)
     left = max(line_start, start - radius)
     right = min(line_end, end + radius)
-    return text[left:right]
+    return _strip_bidi(text[left:right])
+
+
+def _max_file_bytes() -> int:
+    """Per-file size cap; ``PSEUDONYMIZE_MAX_FILE_BYTES`` overrides default (256 MB)."""
+    env = os.environ.get("PSEUDONYMIZE_MAX_FILE_BYTES")
+    if env is not None:
+        try:
+            return int(env)
+        except ValueError:
+            return 256 * 1024 * 1024
+    return 256 * 1024 * 1024
+
+
+def _make_report_writer(
+    args: argparse.Namespace, header: ReportHeader
+) -> "ReportWriter | TsvReportWriter":
+    if args.report_format == "tsv":
+        return TsvReportWriter(args.report, header)
+    return ReportWriter(args.report, header)
 
 
 def _run_detect(args: argparse.Namespace, key: bytes, terms: list) -> int:
@@ -324,13 +362,25 @@ def _run_detect(args: argparse.Namespace, key: bytes, terms: list) -> int:
         started_at=datetime.now(tz=UTC),
         config_hash=_config_hash(key),
     )
-    writer = ReportWriter(args.report, header)
     if args.report.exists():
         args.report.unlink()
+    writer = _make_report_writer(args, header)
+    max_bytes = _max_file_bytes()
 
     for src in sorted(in_dir.rglob("*")):
         if not src.is_file() or src.suffix not in WHITELISTED_EXTENSIONS:
             continue
+        try:
+            size = src.stat().st_size
+        except OSError:
+            continue
+        if size > max_bytes:
+            print(
+                f"error: {src} is {size} bytes; exceeds "
+                f"PSEUDONYMIZE_MAX_FILE_BYTES={max_bytes}",
+                file=sys.stderr,
+            )
+            return EXIT_IO
         rel = src.relative_to(in_dir).as_posix()
         try:
             text = src.read_text(encoding="utf-8")
@@ -376,9 +426,9 @@ def _run_apply(args: argparse.Namespace, key: bytes, terms: list) -> int:
         started_at=datetime.now(tz=UTC),
         config_hash=_config_hash(key),
     )
-    writer = ReportWriter(args.report, header)
     if args.report.exists():
         args.report.unlink()
+    writer = _make_report_writer(args, header)
 
     mapping: dict[str, MappingRecord] = {}
     now = datetime.now(tz=UTC)

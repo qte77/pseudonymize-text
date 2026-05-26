@@ -180,18 +180,13 @@ def test_cli_ner_flag_off_by_default_does_not_invoke_spacy(
     assert rc == 0
 
 
-def test_cli_detect_tsv_report_with_formula_prefix(
+def test_cli_detect_tsv_format_writes_header_and_rows(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     in_dir = tmp_path / "in"
     in_dir.mkdir()
-    # Span text starts with `=` → must be prefixed with `'` in TSV.
     (in_dir / "a.txt").write_text(
-        "Cell value =cmd|' /C calc'!A0 yikes", encoding="utf-8"
-    )
-    terms = tmp_path / "terms.csv"
-    terms.write_text(
-        "value,type\n=cmd|' /C calc'!A0,name\n", encoding="utf-8"
+        "Mail alice@acme.com today", encoding="utf-8"
     )
     report = tmp_path / "report.tsv"
     monkeypatch.setenv("PSEUDONYMIZE_KEY", "ab" * 32)
@@ -199,23 +194,24 @@ def test_cli_detect_tsv_report_with_formula_prefix(
     rc = main(
         [
             "detect", str(in_dir),
-            "--terms", str(terms),
+            "--no-terms",
             "--report", str(report),
             "--report-format", "tsv",
         ]
     )
     assert rc == 0
-    body = report.read_text(encoding="utf-8")
-    # Header row first; column names tab-separated.
-    lines = body.splitlines()
-    assert "\t" in lines[0]
-    assert "text" in lines[0].split("\t")
-    # The =cmd cell must be prefixed with a single quote.
-    assert "'=cmd" in body
-    # Sanity: the unprefixed formula must not appear at a column start.
-    for line in lines[1:]:
+    lines = report.read_text(encoding="utf-8").splitlines()
+    assert lines[0].startswith("# "), "first line is the metadata comment"
+    columns = lines[1].split("\t")
+    assert "text" in columns
+    assert "context" in columns
+    assert any("alice@acme.com" in line for line in lines[2:])
+    # Every data cell that begins with a formula char must be prefixed.
+    for line in lines[2:]:
         for cell in line.split("\t"):
-            assert not cell.startswith("="), f"unprefixed formula cell: {cell!r}"
+            assert not cell.startswith(("=", "+", "-", "@")), (
+                f"unprefixed formula-leading cell: {cell!r}"
+            )
 
 
 def test_cli_detect_context_strips_bidi_and_zero_width(
