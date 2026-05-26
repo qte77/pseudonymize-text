@@ -11,6 +11,8 @@ import sys
 from datetime import UTC, datetime
 from pathlib import Path
 
+from pydantic import ValidationError
+
 from . import __version__
 from ._schemas import MappingRecord, ReportHeader, ReportRecord
 from .detectors.structured import (
@@ -126,6 +128,69 @@ def _check_apply_path_safety(args: argparse.Namespace) -> int:
     return EXIT_OK
 
 
+def _load_plan_or_rc(
+    args: argparse.Namespace, key: bytes
+) -> tuple[ReportHeader, dict[str, list[Span]]] | int:
+    """Parse the ``--plan`` JSONL, validate config_hash + path safety.
+
+    Returns ``(header, spans_by_relpath)`` on success, an exit code on
+    error (4 = unparseable / traversal, 7 = config_hash mismatch).
+    """
+    try:
+        text = args.plan.read_text(encoding="utf-8")
+    except OSError as exc:
+        print(f"error: --plan {args.plan}: {exc}", file=sys.stderr)
+        return EXIT_TERMS
+    lines = text.splitlines()
+    if not lines:
+        return EXIT_TERMS
+    try:
+        header = ReportHeader.model_validate_json(lines[0])
+        records = [ReportRecord.model_validate_json(line) for line in lines[1:]]
+    except (ValidationError, ValueError) as exc:
+        print(f"error: --plan {args.plan}: {exc}", file=sys.stderr)
+        return EXIT_TERMS
+    # Validate structure (paths) before crypto (config_hash) so a
+    # malformed plan exits 4 regardless of whose key it was signed under.
+    in_dir = args.in_dir.resolve()
+    spans_by_file: dict[str, list[Span]] = {}
+    for record in records:
+        parts = Path(record.file).parts
+        if Path(record.file).is_absolute() or ".." in parts:
+            print(
+                f"error: --plan record file {record.file!r} contains "
+                "forbidden traversal",
+                file=sys.stderr,
+            )
+            return EXIT_TERMS
+        if not (in_dir / record.file).resolve().is_relative_to(in_dir):
+            print(
+                f"error: --plan record file {record.file!r} resolves outside "
+                f"<in_dir>",
+                file=sys.stderr,
+            )
+            return EXIT_TERMS
+        spans_by_file.setdefault(record.file, []).append(
+            Span(
+                start=record.start,
+                end=record.end,
+                text=record.text,
+                type=record.type,
+                detector=record.detector,
+                id=record.id,
+                confidence=record.confidence,
+            )
+        )
+    if header.config_hash != _config_hash(key):
+        print(
+            "error: --plan config_hash does not match current key fingerprint; "
+            "the plan was produced with a different key or detector set",
+            file=sys.stderr,
+        )
+        return EXIT_PATH_SAFETY
+    return header, spans_by_file
+
+
 def _load_terms_or_rc(args: argparse.Namespace) -> list | int:
     """Return a parsed term list, or an exit code on error."""
     if args.no_terms or args.terms is None:
@@ -221,6 +286,13 @@ def _run_detect(args: argparse.Namespace, key: bytes, terms: list) -> int:
 
 def _run_apply(args: argparse.Namespace, key: bytes, terms: list) -> int:
     """Walk in_dir → out_dir, substitute spans with tokens, persist mapping + report."""
+    plan_spans: dict[str, list[Span]] = {}
+    if args.plan is not None:
+        loaded = _load_plan_or_rc(args, key)
+        if isinstance(loaded, int):
+            return loaded
+        _, plan_spans = loaded
+
     in_dir = args.in_dir.resolve()
     out_dir = args.out_dir
     header = ReportHeader(
@@ -237,7 +309,10 @@ def _run_apply(args: argparse.Namespace, key: bytes, terms: list) -> int:
     now = datetime.now(tz=UTC)
 
     def transform(text: str, rel: Path) -> str:
-        spans = _detect_spans_for_text(text, terms)
+        if args.plan is not None:
+            spans = plan_spans.get(rel.as_posix(), [])
+        else:
+            spans = _detect_spans_for_text(text, terms)
         tokens = {span: _token_for(span, key) for span in spans}
         for span, token in tokens.items():
             upsert(
