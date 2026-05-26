@@ -23,5 +23,5 @@ jobs:
         with:
           python-version: ${{ matrix.python }}
       - run: uv sync
-      - run: uv run ruff check .
-      - run: uv run pytest
+      - run: uv run ruff check --no-cache .
+      - run: uv run pytest --cov=src/pseudonymize_text --cov-fail-under=80
