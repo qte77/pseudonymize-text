@@ -35,14 +35,26 @@ def process_eml(
     if not isinstance(msg, EmailMessage):  # pragma: no cover - policy.default
         raise TypeError(f"expected EmailMessage, got {type(msg)!r}")
 
+    transform_message(msg, transform, rel)
+    dst.write_bytes(bytes(msg))
+
+
+def transform_message(
+    msg: EmailMessage,
+    transform: Callable[[str, Path], str],
+    rel: Path,
+) -> None:
+    """Apply the ADR_002 in-place mutations to an already-parsed message.
+
+    Shared with ``formats.mbox.process_mbox`` so the per-message contract
+    cannot drift between the two formats.
+    """
     _strip_headers(msg)
     _pseudonymise_headers(msg, transform, rel)
     for part in msg.walk():
         if part.is_multipart():
             continue
         _rewrite_part(part, transform, rel)
-
-    dst.write_bytes(bytes(msg))
 
 
 def _strip_headers(msg: EmailMessage) -> None:
