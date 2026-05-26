@@ -26,3 +26,25 @@ def test_cli_detect_missing_key_exits_3(
     in_dir.mkdir()
     monkeypatch.delenv("PSEUDONYMIZE_KEY", raising=False)
     assert main(["detect", str(in_dir), "--no-terms"]) == 3
+
+
+def test_cli_detect_writes_report_with_header_and_spans(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    in_dir = tmp_path / "in"
+    in_dir.mkdir()
+    (in_dir / "a.txt").write_text(
+        "Contact alice@acme.com about the order", encoding="utf-8"
+    )
+    report = tmp_path / "report.jsonl"
+    monkeypatch.setenv("PSEUDONYMIZE_KEY", "ab" * 32)
+
+    rc = main(
+        ["detect", str(in_dir), "--no-terms", "--report", str(report)]
+    )
+
+    assert rc == 0
+    lines = report.read_text(encoding="utf-8").splitlines()
+    assert len(lines) >= 2
+    assert '"schema": "pseudonymize.report/1"' in lines[0]
+    assert "alice@acme.com" in "\n".join(lines[1:])
