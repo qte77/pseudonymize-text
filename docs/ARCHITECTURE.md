@@ -219,6 +219,7 @@ Every I/O boundary is pinned to **one** policy. Reviewers consult this table whe
 | Walker file enumeration | `walker.walk_and_process` | `fail-loud` (raises `SymlinkEscapeError` when a file symlink in `<in_dir>` resolves outside; UTF-8 decode errors propagate from `Path.read_text`; disk failures propagate from the atomic-write helper). Tmp output files are opened with mode `0o600` (umask-independent). |
 | Term-list load | `detectors.terms.load_terms` | `fail-loud` (raises `ValueError` on unsupported extension, broad pattern `*`/`*@*`/`?`/`**` without `allow_broad`, or malformed CSV/JSON; the same helper backs `lint_terms` so detector and lint cannot disagree). |
 | Structured-detector validation | `detectors.structured.detect_*` | `wrap-continue`. `python-stdnum`'s `iban.is_valid` / `luhn.is_valid` are predicates (do not raise); `phonenumbers.PhoneNumberMatcher` swallows its own parse errors and yields only valid candidates. Lookalikes that fail validation are silently skipped so a single false-positive does not abort the file. |
+| NER detector lazy import | `detectors.ner.detect_ner` | `fail-loud` (raises `ImportError` with `[ner]`-extra install hint if `spacy` is not installed). spaCy's own model load (`spacy.load(model_name)`) propagates `OSError` if the model is not installed. See [docs/ner-install.md](ner-install.md) for the hash-pinned installation procedure. |
 
 ### TDD per-behaviour discipline
 
