@@ -8,6 +8,7 @@ import hashlib
 import hmac
 import os
 import sys
+import unicodedata
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -47,6 +48,18 @@ def _build_parser() -> argparse.ArgumentParser:
     common.add_argument("--no-terms", action="store_true")
     common.add_argument("--key-file", type=Path)
     common.add_argument("--report", type=Path, default=Path("./pseudonymize-report.jsonl"))
+    common.add_argument("--ignore", type=Path)
+    common.add_argument(
+        "--detectors",
+        default="literal,structured",
+        help="comma list: literal, structured, ner",
+    )
+    common.add_argument(
+        "--types",
+        default="name,email,phone,iban,cc,ssn,org,loc",
+        help="comma list of entity types to keep",
+    )
+    common.add_argument("--ner", action="store_true", help="enable NER (requires [ner] extra)")
 
     detect = subs.add_parser("detect", parents=[common])
     detect.add_argument("in_dir", type=Path)
@@ -98,12 +111,54 @@ def main(argv: list[str] | None = None) -> int:
         return terms_or_rc
     terms = terms_or_rc
 
+    ignore_or_rc = _load_ignore_or_rc(args)
+    if isinstance(ignore_or_rc, int):
+        return ignore_or_rc
+    args.ignore_entries = ignore_or_rc
+
+    args.enabled_detectors = {d.strip() for d in args.detectors.split(",") if d.strip()}
+    if args.ner:
+        args.enabled_detectors.add("ner")
+    args.enabled_types = {t.strip() for t in args.types.split(",") if t.strip()}
+
     if args.subcommand == "apply":
         path_safety = _check_apply_path_safety(args)
         if path_safety != EXIT_OK:
             return path_safety
         return _run_apply(args, key, terms)
     return _run_detect(args, key, terms)
+
+
+def _clean_ignore_entry(entry: str) -> str:
+    """NFKC + casefold + strip Unicode `Cf` and non-ASCII `Zs` per #7 spec."""
+    nfkc = unicodedata.normalize("NFKC", entry)
+    out: list[str] = []
+    for ch in nfkc:
+        cat = unicodedata.category(ch)
+        if cat == "Cf":
+            continue
+        if cat == "Zs" and ch != " ":
+            continue
+        out.append(ch)
+    return "".join(out).casefold().strip()
+
+
+def _load_ignore_or_rc(args: argparse.Namespace) -> list[str] | int:
+    """Read ``--ignore`` line-by-line, NFKC + strip-format-chars per entry."""
+    if args.ignore is None:
+        return []
+    try:
+        raw = args.ignore.read_text(encoding="utf-8")
+    except OSError as exc:
+        print(f"error: --ignore {args.ignore}: {exc}", file=sys.stderr)
+        return EXIT_TERMS
+    out: list[str] = []
+    for line in raw.splitlines():
+        stripped = line.strip()
+        if not stripped or stripped.startswith("#"):
+            continue
+        out.append(_clean_ignore_entry(stripped))
+    return out
 
 
 def _is_under(path: Path, parent: Path) -> bool:
@@ -207,15 +262,33 @@ def _config_hash(key: bytes) -> str:
     return hmac.new(key, b"pseudonymize-key-fingerprint-v1", hashlib.sha256).hexdigest()[:32]
 
 
-def _detect_spans_for_text(text: str, terms: list) -> list[Span]:
+_STRUCTURED_DISPATCH = {
+    "email": detect_emails,
+    "phone": detect_phones,
+    "iban": detect_ibans,
+    "cc": detect_credit_cards,
+    "ssn": detect_ssns,
+}
+
+
+def _detect_spans_for_text(
+    text: str,
+    terms: list,
+    enabled_detectors: set[str],
+    enabled_types: set[str],
+) -> list[Span]:
     spans: list[Span] = []
-    spans.extend(detect_terms(text, terms))
-    spans.extend(detect_emails(text))
-    spans.extend(detect_phones(text))
-    spans.extend(detect_ibans(text))
-    spans.extend(detect_credit_cards(text))
-    spans.extend(detect_ssns(text))
-    return spans
+    if "literal" in enabled_detectors:
+        spans.extend(detect_terms(text, terms))
+    if "structured" in enabled_detectors:
+        for type_, fn in _STRUCTURED_DISPATCH.items():
+            if type_ in enabled_types:
+                spans.extend(fn(text))
+    if "ner" in enabled_detectors:
+        from .detectors.ner import detect_ner  # lazy import
+
+        spans.extend(detect_ner(text))
+    return [s for s in spans if s.type in enabled_types]
 
 
 def _token_for(span: Span, key: bytes) -> str:
@@ -263,7 +336,9 @@ def _run_detect(args: argparse.Namespace, key: bytes, terms: list) -> int:
             text = src.read_text(encoding="utf-8")
         except (OSError, UnicodeDecodeError):
             continue
-        for span in _detect_spans_for_text(text, terms):
+        for span in _detect_spans_for_text(
+            text, terms, args.enabled_detectors, args.enabled_types
+        ):
             line, col = _line_col(text, span.start)
             writer.write(
                 ReportRecord(
@@ -312,7 +387,9 @@ def _run_apply(args: argparse.Namespace, key: bytes, terms: list) -> int:
         if args.plan is not None:
             spans = plan_spans.get(rel.as_posix(), [])
         else:
-            spans = _detect_spans_for_text(text, terms)
+            spans = _detect_spans_for_text(
+                text, terms, args.enabled_detectors, args.enabled_types
+            )
         tokens = {span: _token_for(span, key) for span in spans}
         for span, token in tokens.items():
             upsert(
@@ -345,7 +422,9 @@ def _run_apply(args: argparse.Namespace, key: bytes, terms: list) -> int:
                     context=_context(text, span.start, span.end),
                 )
             )
-        return apply_spans(text, spans, tokens.__getitem__)
+        return apply_spans(
+            text, spans, tokens.__getitem__, ignore=args.ignore_entries
+        )
 
     walk_and_process(in_dir, out_dir, transform)
     save_mapping(args.mapping, mapping)
