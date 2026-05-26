@@ -67,6 +67,101 @@ def test_cli_apply_report_inside_out_dir_exits_7(
     assert rc == 7
 
 
+def test_cli_apply_with_plan_uses_only_plan_spans(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    in_dir = tmp_path / "in"
+    in_dir.mkdir()
+    (in_dir / "a.txt").write_text(
+        "alice@acme.com and bob@acme.com", encoding="utf-8"
+    )
+    monkeypatch.setenv("PSEUDONYMIZE_KEY", "ab" * 32)
+
+    # First, generate a full plan via detect.
+    full_plan = tmp_path / "full-plan.jsonl"
+    assert (
+        main(["detect", str(in_dir), "--no-terms", "--report", str(full_plan)])
+        == 0
+    )
+    lines = full_plan.read_text(encoding="utf-8").splitlines()
+    # Header + 2 records (alice + bob); keep only the alice record.
+    header, *records = lines
+    alice_record = next(r for r in records if "alice@acme.com" in r)
+    edited_plan = tmp_path / "alice-only.jsonl"
+    edited_plan.write_text(header + "\n" + alice_record + "\n", encoding="utf-8")
+
+    out_dir = tmp_path / "out"
+    mapping = tmp_path / "mapping.json"
+    report = tmp_path / "report.jsonl"
+    rc = main(
+        [
+            "apply", str(in_dir), str(out_dir),
+            "--no-terms",
+            "--plan", str(edited_plan),
+            "--mapping", str(mapping),
+            "--report", str(report),
+        ]
+    )
+    assert rc == 0
+    written = (out_dir / "a.txt").read_text(encoding="utf-8")
+    # Plan listed only alice → only alice substituted; bob passes through.
+    assert "alice@acme.com" not in written
+    assert "bob@acme.com" in written
+    assert "<EMAIL:" in written
+
+
+def test_cli_apply_plan_config_hash_mismatch_exits_7(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    in_dir = tmp_path / "in"
+    in_dir.mkdir()
+    (in_dir / "a.txt").write_text("Hi alice@acme.com", encoding="utf-8")
+    plan = tmp_path / "plan.jsonl"
+
+    monkeypatch.setenv("PSEUDONYMIZE_KEY", "ab" * 32)
+    assert main(["detect", str(in_dir), "--no-terms", "--report", str(plan)]) == 0
+
+    # Different key → different config_hash → exit 7.
+    monkeypatch.setenv("PSEUDONYMIZE_KEY", "cd" * 32)
+    out_dir = tmp_path / "out"
+    rc = main(
+        [
+            "apply", str(in_dir), str(out_dir),
+            "--no-terms", "--plan", str(plan),
+        ]
+    )
+    assert rc == 7
+
+
+def test_cli_apply_plan_path_traversal_exits_4(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    in_dir = tmp_path / "in"
+    in_dir.mkdir()
+    monkeypatch.setenv("PSEUDONYMIZE_KEY", "ab" * 32)
+
+    # Build a plan with a malicious file field.
+    plan = tmp_path / "evil.jsonl"
+    plan.write_text(
+        '{"schema":"pseudonymize.report/1","tool_version":"x","'
+        'started_at":"2026-05-26T00:00:00Z","config_hash":"'
+        + ("0" * 32) + '"}\n'
+        '{"file":"../../etc/passwd","line":1,"col":1,"start":0,'
+        '"end":3,"text":"abc","detector":"literal","type":"name",'
+        '"id":null,"token":"<NAME:' + ("0" * 32) + '>",'
+        '"confidence":null,"context":"abc"}\n',
+        encoding="utf-8",
+    )
+
+    rc = main(
+        [
+            "apply", str(in_dir), str(tmp_path / "out"),
+            "--no-terms", "--plan", str(plan),
+        ]
+    )
+    assert rc == 4
+
+
 def test_cli_apply_writes_substituted_output_and_mapping(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
