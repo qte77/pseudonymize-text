@@ -67,6 +67,114 @@ def test_cli_apply_report_inside_out_dir_exits_7(
     assert rc == 7
 
 
+def test_cli_apply_ignore_file_with_unicode_cleanup_suppresses_match(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    in_dir = tmp_path / "in"
+    in_dir.mkdir()
+    (in_dir / "a.txt").write_text(
+        "Visit Straße for the meeting", encoding="utf-8"
+    )
+    terms = tmp_path / "terms.csv"
+    terms.write_text("value,type\nStraße,loc\n", encoding="utf-8")
+    ignore = tmp_path / "ignore.txt"
+    # Zero-width space inside the entry must be stripped by NFKC + Cf cleanup.
+    ignore.write_text("Stras​se\n", encoding="utf-8")
+    monkeypatch.setenv("PSEUDONYMIZE_KEY", "ab" * 32)
+
+    rc = main(
+        [
+            "apply", str(in_dir), str(tmp_path / "out"),
+            "--terms", str(terms),
+            "--ignore", str(ignore),
+            "--mapping", str(tmp_path / "mapping.json"),
+            "--report", str(tmp_path / "report.jsonl"),
+        ]
+    )
+
+    assert rc == 0
+    written = (tmp_path / "out" / "a.txt").read_text(encoding="utf-8")
+    # Ignore entry "Stras​se" → NFKC+casefold+Cf-strip → "strasse"
+    # → equals casefold(NFKC("Straße")) so the span is suppressed.
+    assert "Straße" in written
+    assert "<LOC:" not in written
+
+
+def test_cli_detectors_filter_excludes_structured(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    in_dir = tmp_path / "in"
+    in_dir.mkdir()
+    (in_dir / "a.txt").write_text(
+        "Email alice@acme.com; name John Doe", encoding="utf-8"
+    )
+    terms = tmp_path / "terms.csv"
+    terms.write_text("value,type\nJohn Doe,name\n", encoding="utf-8")
+    report = tmp_path / "r.jsonl"
+    monkeypatch.setenv("PSEUDONYMIZE_KEY", "ab" * 32)
+
+    rc = main(
+        [
+            "detect", str(in_dir),
+            "--terms", str(terms),
+            "--detectors", "literal",
+            "--report", str(report),
+        ]
+    )
+    assert rc == 0
+    body = report.read_text(encoding="utf-8")
+    assert "John Doe" in body
+    assert "alice@acme.com" not in body
+
+
+def test_cli_types_filter_keeps_only_named_types(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    in_dir = tmp_path / "in"
+    in_dir.mkdir()
+    (in_dir / "a.txt").write_text(
+        "Email alice@acme.com; SSN 123-45-6789", encoding="utf-8"
+    )
+    report = tmp_path / "r.jsonl"
+    monkeypatch.setenv("PSEUDONYMIZE_KEY", "ab" * 32)
+
+    rc = main(
+        [
+            "detect", str(in_dir),
+            "--no-terms",
+            "--types", "email",
+            "--report", str(report),
+        ]
+    )
+    assert rc == 0
+    body = report.read_text(encoding="utf-8")
+    assert "alice@acme.com" in body
+    assert "123-45-6789" not in body
+
+
+def test_cli_ner_flag_off_by_default_does_not_invoke_spacy(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Without --ner, spacy is never imported even if installed."""
+    import sys
+
+    in_dir = tmp_path / "in"
+    in_dir.mkdir()
+    (in_dir / "a.txt").write_text("Some text", encoding="utf-8")
+    monkeypatch.setitem(sys.modules, "spacy", None)
+    monkeypatch.setenv("PSEUDONYMIZE_KEY", "ab" * 32)
+
+    rc = main(
+        [
+            "detect", str(in_dir), "--no-terms",
+            "--report", str(tmp_path / "r.jsonl"),
+        ]
+    )
+    # If --ner were on, the import would fail with ExitCode 5 because spacy
+    # is shadowed to None. Off-by-default means rc=0.
+    assert rc == 0
+
+
 def test_cli_apply_with_plan_uses_only_plan_spans(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
