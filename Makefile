@@ -20,7 +20,7 @@ test:
 	uv run pytest
 
 lint:
-	uv run ruff check .
+	uv run ruff check --no-cache .
 	markdownlint README.md docs/
 
 lint_terms:
