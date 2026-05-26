@@ -51,7 +51,7 @@ PSEUDONYMIZE_KEY=$(cat .key) \
 | [docs/HASHING.md](docs/HASHING.md) | Token construction, canonicalization, stability — design rationale |
 | [docs/GLOSSARY.md](docs/GLOSSARY.md) | Abbreviations, PII vs PHI, terms of art |
 | [docs/landscape/de-identification.md](docs/landscape/de-identification.md) | Alternatives (Presidio, philter) and when to pick them |
-| [docs/ADR/](docs/ADR/) | Architectural decisions ([MADR](https://adr.github.io/madr/) format) |
+| [docs/decisions/](docs/decisions/) | Architectural decisions ([MADR](https://adr.github.io/madr/) format) |
 | [AGENTS.md](AGENTS.md) | Behavioral rules for AI coding agents |
 | [CHANGELOG.md](CHANGELOG.md) | Version history (Keep-a-Changelog) |
 
