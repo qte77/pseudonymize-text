@@ -1,0 +1,11 @@
+Subject: status update
+
+John Doe joined Acme Corp last week. Please email him at
+john.doe@acme.com for any onboarding questions, or call
++1 415 555 0100. His SSN 123-45-6789 has been recorded for
+payroll, and the company IBAN DE89370400440532013000 is on
+file. Bob Smith (he/him) handles cards: 4111-1111-1111-1111
+is the corporate test number.
+
+Regards,
+J. Doe

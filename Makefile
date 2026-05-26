@@ -17,7 +17,7 @@ setup:
 	uv sync --all-extras
 
 test:
-	uv run pytest
+	uv run pytest --cov=src/pseudonymize_text --cov-fail-under=80
 
 lint:
 	uv run ruff check --no-cache .
