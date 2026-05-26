@@ -26,7 +26,7 @@ Background reading: <https://www.hipaajournal.com/phi-vs-pii/> · <https://gdprl
 
 | Term | Expansion | Gloss | Primary use |
 |---|---|---|---|
-| **ADR** | Architecture Decision Record | Markdown record of an architecturally significant decision; [MADR](https://adr.github.io/madr/) format. | [docs/ADR/](ADR/) |
+| **ADR** | Architecture Decision Record | Markdown record of an architecturally significant decision; [MADR](https://adr.github.io/madr/) format. | [docs/decisions/](decisions/) |
 | **AEPD** | Agencia Española de Protección de Datos | Spanish data-protection authority; co-authored the EDPS hash-paper cited in our compliance posture. | [COMPLIANCE.md](COMPLIANCE.md) |
 | **ARC** | Authenticated Received Chain | Email-authentication header; stripped on rewrite because pseudonymization invalidates the signature. | [ARCHITECTURE.md](ARCHITECTURE.md) |
 | **CC** | Credit Card | A payment-card number; validated via Luhn (mod-10). | [ARCHITECTURE.md](ARCHITECTURE.md) |
@@ -48,7 +48,7 @@ Background reading: <https://www.hipaajournal.com/phi-vs-pii/> · <https://gdprl
 | **KDF** | Key Derivation Function | Function that derives keys from a secret; we deliberately do **not** use one (HMAC's PRF property suffices). | [SECURITY.md](SECURITY.md) |
 | **LLM** | Large Language Model | Downstream consumer of pseudonymized output; security caveats in [SECURITY.md § LLM and downstream consumption](SECURITY.md#llm-and-downstream-consumption). | [SECURITY.md](SECURITY.md) |
 | **MAC** | Message Authentication Code | Generic term for a keyed integrity primitive; HMAC is the construction we use. | [SECURITY.md](SECURITY.md) |
-| **MADR** | Markdown Architecture Decision Record | The ADR template format used in [docs/ADR/](ADR/). | [docs/ADR/](ADR/) |
+| **MADR** | Markdown Architecture Decision Record | The ADR template format used in [docs/decisions/](decisions/). | [docs/decisions/](decisions/) |
 | **MIME** | Multipurpose Internet Mail Extensions | Email content-type system; `.eml`/`.mbox` parts are dispatched per MIME type. | [ARCHITECTURE.md](ARCHITECTURE.md) |
 | **MRN** | Medical Record Number | PHI identifier category; **not detected** by this tool. | [PII vs PHI](#pii-vs-phi) |
 | **NER** | Named Entity Recognition | spaCy-based detection of PERSON/ORG/LOC; optional via `[ner]` extra. | [ner-install.md](ner-install.md) |
