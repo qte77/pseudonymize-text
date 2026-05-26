@@ -96,9 +96,34 @@ def main(argv: list[str] | None = None) -> int:
         return terms_or_rc
     terms = terms_or_rc
 
-    if args.subcommand == "detect":
-        return _run_detect(args, key, terms)
-    return _run_apply(args, key, terms)
+    if args.subcommand == "apply":
+        path_safety = _check_apply_path_safety(args)
+        if path_safety != EXIT_OK:
+            return path_safety
+        return _run_apply(args, key, terms)
+    return _run_detect(args, key, terms)
+
+
+def _is_under(path: Path, parent: Path) -> bool:
+    """True iff ``path`` resolves under ``parent`` (after both are resolved)."""
+    try:
+        return path.resolve().is_relative_to(parent.resolve())
+    except (OSError, ValueError):
+        return False
+
+
+def _check_apply_path_safety(args: argparse.Namespace) -> int:
+    """Return EXIT_PATH_SAFETY if --mapping or --report is inside out_dir."""
+    out_dir = args.out_dir
+    for label, candidate in (("--mapping", args.mapping), ("--report", args.report)):
+        if _is_under(candidate, out_dir):
+            print(
+                f"error: {label} {candidate} would land inside <out_dir> {out_dir}; "
+                "see SECURITY.md § Operational rules",
+                file=sys.stderr,
+            )
+            return EXIT_PATH_SAFETY
+    return EXIT_OK
 
 
 def _load_terms_or_rc(args: argparse.Namespace) -> list | int:
