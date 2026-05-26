@@ -12,7 +12,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 from . import __version__
-from ._schemas import ReportHeader, ReportRecord
+from ._schemas import MappingRecord, ReportHeader, ReportRecord
 from .detectors.structured import (
     detect_credit_cards,
     detect_emails,
@@ -21,10 +21,11 @@ from .detectors.structured import (
     detect_ssns,
 )
 from .detectors.terms import detect_terms, load_terms
-from .replacer import Span
+from .mapping import save_mapping, upsert
+from .replacer import Span, apply_spans
 from .report import ReportWriter
 from .tokenize import canonicalize, hmac_token
-from .walker import WHITELISTED_EXTENSIONS
+from .walker import WHITELISTED_EXTENSIONS, walk_and_process
 
 EXIT_OK = 0
 EXIT_USAGE = 2
@@ -97,7 +98,7 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.subcommand == "detect":
         return _run_detect(args, key, terms)
-    return _run_detect(args, key, terms)  # apply lands in C3
+    return _run_apply(args, key, terms)
 
 
 def _load_terms_or_rc(args: argparse.Namespace) -> list | int:
@@ -190,6 +191,64 @@ def _run_detect(args: argparse.Namespace, key: bytes, terms: list) -> int:
                     context=_context(text, span.start, span.end),
                 )
             )
+    return EXIT_OK
+
+
+def _run_apply(args: argparse.Namespace, key: bytes, terms: list) -> int:
+    """Walk in_dir → out_dir, substitute spans with tokens, persist mapping + report."""
+    in_dir = args.in_dir.resolve()
+    out_dir = args.out_dir
+    header = ReportHeader(
+        schema="pseudonymize.report/1",
+        tool_version=__version__,
+        started_at=datetime.now(tz=UTC),
+        config_hash=_config_hash(key),
+    )
+    writer = ReportWriter(args.report, header)
+    if args.report.exists():
+        args.report.unlink()
+
+    mapping: dict[str, MappingRecord] = {}
+    now = datetime.now(tz=UTC)
+
+    def transform(text: str, rel: Path) -> str:
+        spans = _detect_spans_for_text(text, terms)
+        tokens = {span: _token_for(span, key) for span in spans}
+        for span, token in tokens.items():
+            upsert(
+                mapping,
+                token,
+                MappingRecord(
+                    value=span.text,
+                    canonical=canonicalize(span.text, span.type),
+                    type=span.type,
+                    id=span.id,
+                    first_seen=now,
+                    last_seen=now,
+                    occurrences=1,
+                ),
+            )
+            line, col = _line_col(text, span.start)
+            writer.write(
+                ReportRecord(
+                    file=rel.as_posix(),
+                    line=line,
+                    col=col,
+                    start=span.start,
+                    end=span.end,
+                    text=span.text,
+                    detector=span.detector,
+                    type=span.type,
+                    id=span.id,
+                    token=token,
+                    confidence=span.confidence,
+                    context=_context(text, span.start, span.end),
+                )
+            )
+        return apply_spans(text, spans, tokens.__getitem__)
+
+    walk_and_process(in_dir, out_dir, transform)
+    save_mapping(args.mapping, mapping)
     return EXIT_OK
 
 
