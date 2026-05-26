@@ -180,6 +180,85 @@ def test_cli_ner_flag_off_by_default_does_not_invoke_spacy(
     assert rc == 0
 
 
+def test_cli_detect_tsv_report_with_formula_prefix(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    in_dir = tmp_path / "in"
+    in_dir.mkdir()
+    # Span text starts with `=` → must be prefixed with `'` in TSV.
+    (in_dir / "a.txt").write_text(
+        "Cell value =cmd|' /C calc'!A0 yikes", encoding="utf-8"
+    )
+    terms = tmp_path / "terms.csv"
+    terms.write_text(
+        "value,type\n=cmd|' /C calc'!A0,name\n", encoding="utf-8"
+    )
+    report = tmp_path / "report.tsv"
+    monkeypatch.setenv("PSEUDONYMIZE_KEY", "ab" * 32)
+
+    rc = main(
+        [
+            "detect", str(in_dir),
+            "--terms", str(terms),
+            "--report", str(report),
+            "--report-format", "tsv",
+        ]
+    )
+    assert rc == 0
+    body = report.read_text(encoding="utf-8")
+    # Header row first; column names tab-separated.
+    lines = body.splitlines()
+    assert "\t" in lines[0]
+    assert "text" in lines[0].split("\t")
+    # The =cmd cell must be prefixed with a single quote.
+    assert "'=cmd" in body
+    # Sanity: the unprefixed formula must not appear at a column start.
+    for line in lines[1:]:
+        for cell in line.split("\t"):
+            assert not cell.startswith("="), f"unprefixed formula cell: {cell!r}"
+
+
+def test_cli_detect_context_strips_bidi_and_zero_width(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    in_dir = tmp_path / "in"
+    in_dir.mkdir()
+    # ZWSP + RLO around an email; both must be stripped from `context`
+    # before the record is written.
+    (in_dir / "a.txt").write_text(
+        "Contact ​‮alice@acme.com‬ soon", encoding="utf-8"
+    )
+    report = tmp_path / "r.jsonl"
+    monkeypatch.setenv("PSEUDONYMIZE_KEY", "ab" * 32)
+
+    rc = main(
+        ["detect", str(in_dir), "--no-terms", "--report", str(report)]
+    )
+    assert rc == 0
+    import json as _json
+
+    records = [_json.loads(line) for line in report.read_text().splitlines()[1:]]
+    assert records, "expected at least one record"
+    for r in records:
+        for bad in ("​", "‬", "‭", "‮"):
+            assert bad not in r["context"], f"{bad!r} survived in context"
+
+
+def test_cli_detect_oversize_file_exits_6(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    in_dir = tmp_path / "in"
+    in_dir.mkdir()
+    (in_dir / "huge.txt").write_text("x" * 1024, encoding="utf-8")
+    monkeypatch.setenv("PSEUDONYMIZE_KEY", "ab" * 32)
+    monkeypatch.setenv("PSEUDONYMIZE_MAX_FILE_BYTES", "10")
+
+    rc = main(
+        ["detect", str(in_dir), "--no-terms", "--report", str(tmp_path / "r.jsonl")]
+    )
+    assert rc == 6
+
+
 def test_cli_apply_with_plan_uses_only_plan_spans(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
