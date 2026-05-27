@@ -131,3 +131,16 @@ pseudonymize apply ./corpus ./out --terms terms.csv
 ```
 
 A report is still written — `apply` never runs blind.
+
+**Mail corpus** (`.eml` / `.mbox`):
+
+`.eml` and `.mbox` extensions are auto-routed through `formats/` per [ADR_002](decisions/ADR_002.md) — no extra flag. Headers (incl. RFC 2047 encoded), `text/plain`, and `text/html` parts are pseudonymized; non-text parts are replaced with a `[part removed by pseudonymize: <ctype>; <N> bytes]` stub; `DKIM-Signature` and `ARC-*` headers are stripped (signatures are invalid after rewrite); `.mbox` inputs fan out to per-message `.eml` files at `<out_dir>/<basename>/<seq>.eml` — no mbox re-assembly.
+
+```bash
+pseudonymize detect ./mail-in --terms terms.csv --ner --report plan.jsonl
+# review plan.jsonl (especially NER spans), build false-positives.txt
+pseudonymize apply ./mail-in ./mail-out \
+  --terms terms.csv --plan plan.jsonl --ignore false-positives.txt
+```
+
+For unsupported PHI categories in clinical mail, see [landscape/de-identification.md](landscape/de-identification.md). The part-fate table lives in [ARCHITECTURE.md § Mail-format support](ARCHITECTURE.md#mail-format-support).
