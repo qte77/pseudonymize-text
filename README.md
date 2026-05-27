@@ -15,6 +15,14 @@ Bulk-pseudonymize sensitive entities (names, emails, phones, IBANs, SSNs, credit
 - **Lightweight** — Python stdlib + two small deps (`python-stdnum`, `phonenumberslite`). Optional spaCy NER via `[ner]` extra.
 - **Audit-first** — `detect` produces a JSONL plan; `apply` executes it byte-identically.
 
+## Use cases
+
+**Covered**: bulk pseudonymization of text trees (`.txt`, `.md`, `.log`, `.py`, `.json`, `.yaml`, `.csv`, `.toml`, `.ini`) and mail corpora (`.eml`, `.mbox`); seven entity types (name, email, phone, IBAN, credit card, SSN, organization, location) via literal + structured detectors plus optional spaCy NER; deterministic + reversible HMAC-SHA256 with an audit-first detect/apply CLI.
+
+**Not covered**: PHI-only HIPAA identifiers (MRN, NPI, device IDs, biometric); anonymization (output is still personal data); linkage attacks via writing style / timestamps / metadata; binary mail attachments (dropped with stub); image OCR; database column redaction at query time; real-time HTTP middleware redaction. See [docs/USER_STORIES.md](docs/USER_STORIES.md) for capability-level coverage and [docs/COMPLIANCE.md § What we do not claim](docs/COMPLIANCE.md#what-we-do-not-claim) for the formal non-claims.
+
+**Deferred**: PDF and Office formats, streaming for files > 256 MB, parallel processing, encrypted mapping at rest, public Python API — see [docs/roadmap.md](docs/roadmap.md).
+
 ## Install
 
 ```bash
@@ -50,6 +58,7 @@ PSEUDONYMIZE_KEY=$(cat .key) \
 | [docs/SECURITY.md](docs/SECURITY.md) | Threat model, key & mapping handling |
 | [docs/HASHING.md](docs/HASHING.md) | Token construction, canonicalization, stability — design rationale |
 | [docs/GLOSSARY.md](docs/GLOSSARY.md) | Abbreviations, PII vs PHI, terms of art |
+| [docs/USER_STORIES.md](docs/USER_STORIES.md) | User stories grouped by support level (supported / partial / out of scope) |
 | [docs/landscape/de-identification.md](docs/landscape/de-identification.md) | Alternatives (Presidio, philter) and when to pick them |
 | [docs/decisions/](docs/decisions/) | Architectural decisions ([MADR](https://adr.github.io/madr/) format) |
 | [AGENTS.md](AGENTS.md) | Behavioral rules for AI coding agents |

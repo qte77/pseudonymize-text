@@ -194,6 +194,20 @@ This guarantees a curated `terms.csv` entry always overrides a structured or NER
 
 See [roadmap.md](roadmap.md) for milestones (0.2.0, 1.0.0, 2.0.0).
 
+## Out of architectural scope
+
+The current architecture does **not** support, and is not designed to support:
+
+- **Streaming / files > `MAX_FILE_BYTES`** (default 256 MB). Per-file work loads the full text into memory; large-file streaming is deferred to 2.0.0 per [roadmap.md](roadmap.md).
+- **Binary / non-text formats** (`.pdf`, `.docx`, `.xlsx`, images). The walker passes them through byte-identically; pseudonymization runs only on whitelisted text extensions and `.eml` / `.mbox`. Office / PDF support is deferred to 2.0.0.
+- **Mail attachment content.** Per [ADR_002](decisions/ADR_002.md), non-text MIME parts are replaced with a stub; their byte payload is not parsed.
+- **Multi-tenant key isolation in-process.** One HMAC key per process; tenants requiring isolation must run separate invocations with distinct `--key-file` paths.
+- **PHI-only HIPAA identifiers.** No MRN / NPI / DEA / VIN / device-ID detectors; covered only via operator-supplied `terms.csv` patterns. Track [#42](https://github.com/qte77/pseudonymize-text/issues/42) for a future `[phi]` extra.
+- **Network-bound operations.** All I/O is local filesystem; no telemetry, no cloud KMS, no external NER service.
+- **GUI / web UI.** CLI-only by design for auditability and scriptability.
+
+See [USER_STORIES.md](USER_STORIES.md) for capability-level coverage and [COMPLIANCE.md § What we do not claim](COMPLIANCE.md#what-we-do-not-claim) for the formal non-claims.
+
 ## Working norms
 
 Conventions every contribution follows.
