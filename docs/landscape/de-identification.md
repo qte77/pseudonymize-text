@@ -28,6 +28,17 @@ This page enumerates the de-identification / pseudonymization tools we evaluated
 | Streaming PII redaction in Python via library API | [scrubadub](https://github.com/LeapBeyond/scrubadub) |
 | PHI-specific identifiers (MRN, NPI, DEA, VIN, device IDs) | [philter](https://github.com/BCHSI/philter-ucsf) or Presidio's medical recognizers — **not** detected by `pseudonymize-text` (see [GLOSSARY.md § PII vs PHI](../GLOSSARY.md#pii-vs-phi)) |
 
+## Mail corpora
+
+| Mail corpus shape | Pick | Why |
+|---|---|---|
+| Corporate / GDPR-governed | `pseudonymize-text` | Format fidelity per [ADR_002](../decisions/ADR_002.md); deterministic + reversible-under-control per [COMPLIANCE.md § Requirements satisfied](../COMPLIANCE.md#requirements-satisfied); audit-first detect/apply |
+| Clinical (patient correspondence, EHR exports) | [philter](https://github.com/BCHSI/philter-ucsf) on extracted body text, or track [#42](https://github.com/qte77/pseudonymize-text/issues/42) | PHI-only HIPAA identifiers (MRN, NPI, device IDs) are out of scope for `pseudonymize-text`; you trade mail-structure fidelity for Safe Harbor coverage |
+| Mixed (mostly PII + a few PHI patterns) where reversibility matters¹ | `pseudonymize-text` + hand-curated `terms.csv` listing known PHI strings | One pipeline; gaps stay explicit in `terms.csv` |
+| Mail files >256 MB | Pre-split `.mbox` via Python stdlib [`mailbox`](https://docs.python.org/3/library/mailbox.html), then `pseudonymize-text` | Streaming deferred to 2.0.0 per [roadmap.md](../roadmap.md) |
+
+¹ Operator-derivable from literal-precedence rules ([ARCHITECTURE.md § Span precedence](../ARCHITECTURE.md#span-precedence-overlap-resolution-in-replacerpy)); not separately documented as a supported workflow.
+
 ## Why this tool exists alongside the above
 
 Presidio and philter are mature; neither targets the specific intersection of:
