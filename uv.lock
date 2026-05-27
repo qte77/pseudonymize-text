@@ -698,11 +698,11 @@ wheels = [
 
 [[package]]
 name = "phonenumberslite"
-version = "9.0.30"
+version = "9.0.31"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/81/81/a03f627d7ec2d6dcf91ba1216cf8b2012f924ed4c040cca8903efeca7c77/phonenumberslite-9.0.30.tar.gz", hash = "sha256:b84fb322efa8fd5b1114868bce8b668f770da70a50354e9c4b21997aa9605c13", size = 288657, upload-time = "2026-05-07T10:20:18Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/58/11/87590d775cd3e4586609e5ad06a3ac023dbcd2d8873d70df2e756d3a33e7/phonenumberslite-9.0.31.tar.gz", hash = "sha256:580d23864b4d5cd75a3967a9a2a1965a5f85d7d092ed05e40d547b995eafd8c2", size = 288685, upload-time = "2026-05-23T06:08:48.278Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/f1/5b/8a2811e962212b83d220f0d863077ffb39cedec8271efd3f8b826a774aaa/phonenumberslite-9.0.30-py2.py3-none-any.whl", hash = "sha256:c02bc6459560528c2ad8126d3dbf4286471fbc248843a9e7d7d1e624991c7e9a", size = 473251, upload-time = "2026-05-07T10:20:16.097Z" },
+    { url = "https://files.pythonhosted.org/packages/3e/cd/561a41cd1eb4269e884bf09adc3728be3f4ae2773ad0154ce64ff2dddb35/phonenumberslite-9.0.31-py2.py3-none-any.whl", hash = "sha256:dbbb5e4c5c561ffc7f67af808aa391eb1a10b777645aac08ba4a1479fb172216", size = 473266, upload-time = "2026-05-23T06:08:46.693Z" },
 ]
 
 [[package]]
@@ -768,7 +768,7 @@ wheels = [
 
 [[package]]
 name = "pseudonymize-text"
-version = "0.0.2"
+version = "0.1.0"
 source = { editable = "." }
 dependencies = [
     { name = "phonenumberslite" },
@@ -791,7 +791,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "phonenumberslite", specifier = ">=8.13" },
+    { name = "phonenumberslite", specifier = ">=9.0.31" },
     { name = "pydantic", specifier = ">=2.0" },
     { name = "python-stdnum", specifier = ">=1.20" },
     { name = "spacy", marker = "extra == 'ner'", specifier = ">=3.7" },
