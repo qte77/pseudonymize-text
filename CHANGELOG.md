@@ -11,6 +11,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `docs/GLOSSARY.md`: alphabetized abbreviations table + PII vs PHI distinction citing HIPAA Journal / GDPR Local; states tool targets GDPR personal data / PII, not PHI-only HIPAA identifier categories (#43).
+- `docs/landscape/de-identification.md`: extracted from README; comparison vs Presidio + philter, "when to pick something else" matrix incl. Faker / scrubadub, rationale block for why this tool exists alongside the alternatives (#43).
+
+### Changed
+
+- `docs/ADR/` renamed to `docs/decisions/` for MADR canonical layout; `ADR_001` Location bullet updated; AGENTS.md and ARCHITECTURE.md link paths updated. CHANGELOG historical entries left intact per append-only principle (#43).
+- `docs/COMPLIANCE.md` § "What we do not claim": new "PHI-specific identifiers" bullet narrows the disclaimer to PHI-only HIPAA categories (MRN, NPI, device IDs, etc.) and routes operators to philter / Presidio's medical recognizers (#43).
+- `README.md` "Related projects" section shrunk to a one-line pointer; Documentation table extended with `docs/GLOSSARY.md` and `docs/landscape/de-identification.md` rows (#43).
+
 ## [0.1.0] - 2026-05-26
 
 First implementation cut. `pseudonymize detect` / `pseudonymize apply` now wire walker → detectors → replacer → tokenize → mapping → report end-to-end against text trees and `.eml` / `.mbox` mail corpora. README quickstart is real, not aspirational.
