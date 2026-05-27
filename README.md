@@ -58,7 +58,7 @@ PSEUDONYMIZE_KEY=$(cat .key) \
 | [docs/SECURITY.md](docs/SECURITY.md) | Threat model, key & mapping handling |
 | [docs/HASHING.md](docs/HASHING.md) | Token construction, canonicalization, stability — design rationale |
 | [docs/GLOSSARY.md](docs/GLOSSARY.md) | Abbreviations, PII vs PHI, terms of art |
-| [docs/USER_STORIES.md](docs/USER_STORIES.md) | Capability-level coverage (supported / partial / out of scope) |
+| [docs/USER_STORIES.md](docs/USER_STORIES.md) | User stories grouped by support level (supported / partial / out of scope) |
 | [docs/landscape/de-identification.md](docs/landscape/de-identification.md) | Alternatives (Presidio, philter) and when to pick them |
 | [docs/decisions/](docs/decisions/) | Architectural decisions ([MADR](https://adr.github.io/madr/) format) |
 | [AGENTS.md](AGENTS.md) | Behavioral rules for AI coding agents |
