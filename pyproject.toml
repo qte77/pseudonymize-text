@@ -22,7 +22,7 @@ classifiers = [
 ]
 dependencies = [
   "python-stdnum>=1.20",
-  "phonenumberslite>=8.13",
+  "phonenumberslite>=9.0.31",
   "pydantic>=2.0",
 ]
 
