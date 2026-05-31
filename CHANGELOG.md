@@ -11,9 +11,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-05-31
+
+Runtime sandbox + default-path cut. All runtime artefacts (key, report, mapping, term lists, plans, ignore lists) now land under `./runs/` by default; `.gitignore` ships the sandbox plus belt-and-braces per-artefact globs so default-named outputs stay out of the repo even when an operator runs outside `runs/`. Pre-1.0 behaviour change: operators relying on the previous cwd-root defaults must pass explicit `--report` / `--mapping` flags or move artefacts under `runs/`.
+
 ### Added
 
 - `docs/assets/images/architecture-bird.svg`: hand-authored bird's-eye view of the public output lane (inputs → walker → detectors → replacer → tokenize → `./out/`) vs the secret artifacts lane (`key`, `report.jsonl`, `mapping.json`), with a trust-boundary line. Dual palette via `prefers-color-scheme`, WCAG AA-compliant green/red, responsive legend hide at <600 px. Embedded inside a collapsed `<details>` block in `docs/ARCHITECTURE.md`. Mirrors the cross-repo convention established in `qte77/doc-pipeline-engine`.
+- `.gitignore`: `runs/` and `local/` sandbox directories; per-artefact globs (`*-mapping.json`, `*-report.jsonl`, `plan*.jsonl`, `discovery*.jsonl`, `ignore.txt`, `false-positives*.txt`) so default-named runtime outputs are gitignored even outside `runs/`; `terms.csv` and `terms.json` since user-provided term lists frequently contain the literal PII they are meant to mask; `!tests/fixtures/**` re-include so shipped fixtures (`tests/fixtures/terms.csv`) are not silently hidden.
+- `src/pseudonymize_text/cli.py`: `_run_detect` and `_run_apply` auto-create the parent directory of `--report` (and `--mapping` in `apply`) before the first write, so the new `runs/` default works on a fresh checkout without an explicit `mkdir`.
 
 ### Fixed
 
@@ -37,6 +43,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `docs/ADR/` renamed to `docs/decisions/` for MADR canonical layout; `ADR_001` Location bullet updated; AGENTS.md and ARCHITECTURE.md link paths updated. CHANGELOG historical entries left intact per append-only principle (#43).
 - `docs/COMPLIANCE.md` § "What we do not claim": new "PHI-specific identifiers" bullet narrows the disclaimer to PHI-only HIPAA categories (MRN, NPI, device IDs, etc.) and routes operators to philter / Presidio's medical recognizers (#43).
 - `README.md` "Related projects" section shrunk to a one-line pointer; Documentation table extended with `docs/GLOSSARY.md` and `docs/landscape/de-identification.md` rows (#43).
+- `src/pseudonymize_text/cli.py`: `--report` default `./pseudonymize-report.jsonl` → `./runs/pseudonymize-report.jsonl`; `--mapping` default `./pseudonymize-mapping.json` → `./runs/pseudonymize-mapping.json`. Behavioural change is intentional: artefacts are now sandboxed by default and the gitignore catches them whether or not an operator overrides the path.
+- `README.md` Quickstart + `docs/USAGE.md` Workflow / Examples / Mail-corpus blocks: every example path migrated to `runs/in`, `runs/out`, `runs/mail-in`, `runs/mail-out`, `runs/plan.jsonl`, `runs/report.jsonl`, `runs/mapping.json`, `runs/terms.csv`, `runs/false-positives.txt`. Flag-defaults table notes parent auto-create.
+- `docs/SECURITY.md` § Artifacts produced by a run: default paths updated to `./runs/pseudonymize-{report.jsonl,mapping.json}`. § Operational rules: gitignore-guidance row expanded to enumerate the runs/ sandbox plus the full per-artefact glob set.
+- `docs/ARCHITECTURE.md` data-flow diagram: mapping default annotated as `runs/pseudonymize-mapping.json` with a parent-auto-create note.
+- `docs/USER_STORIES.md` § Operator — re-identify: jq reverse-lookup example updated to `runs/pseudonymize-mapping.json`.
+- `docs/roadmap.md`: previously planned "0.2.0 — convenience" items (`--expand-names`, pre-commit hook variant, per-language NER auto-select, `--output-format`) rolled to `0.3.0`; new `0.2.0 — runtime sandbox + default paths` section inserted; current-release line bumped to `0.2.0`.
+- `docs/landscape/de-identification.md`: current-version reference bumped to `v0.2.0`.
 
 ## [0.1.0] - 2026-05-26
 
