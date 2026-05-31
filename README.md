@@ -1,6 +1,6 @@
 # pseudonymize
 
-Bulk-pseudonymize sensitive entities (names, emails, phones, IBANs, SSNs, credit cards, addresses, organizations) across a folder tree — deterministically and reversibly.
+Bulk-pseudonymize sensitive entities (names, emails, phones, IBANs, SSNs, credit cards, locations, organizations) across a folder tree — deterministically and reversibly.
 
 [![License](https://img.shields.io/badge/license-Apache--2.0-58f4c2.svg)](LICENSE)
 ![Version](https://img.shields.io/badge/version-0.1.0-58f4c2.svg)
@@ -17,7 +17,7 @@ Bulk-pseudonymize sensitive entities (names, emails, phones, IBANs, SSNs, credit
 
 ## Use cases
 
-**Covered**: bulk pseudonymization of text trees (`.txt`, `.md`, `.log`, `.py`, `.json`, `.yaml`, `.csv`, `.toml`, `.ini`) and mail corpora (`.eml`, `.mbox`); seven entity types (name, email, phone, IBAN, credit card, SSN, organization, location) via literal + structured detectors plus optional spaCy NER; deterministic + reversible HMAC-SHA256 with an audit-first detect/apply CLI.
+**Covered**: bulk pseudonymization of text trees (`.txt`, `.md`, `.log`, `.py`, `.json`, `.yaml`, `.csv`, `.toml`, `.ini`) and mail corpora (`.eml`, `.mbox`); eight entity types (name, email, phone, IBAN, credit card, SSN, organization, location) via literal + structured detectors plus optional spaCy NER; deterministic + reversible HMAC-SHA256 with an audit-first detect/apply CLI.
 
 **Not covered**: PHI-only HIPAA identifiers (MRN, NPI, device IDs, biometric); anonymization (output is still personal data); linkage attacks via writing style / timestamps / metadata; binary mail attachments (dropped with stub); image OCR; database column redaction at query time; real-time HTTP middleware redaction. See [docs/USER_STORIES.md](docs/USER_STORIES.md) for capability-level coverage and [docs/COMPLIANCE.md § What we do not claim](docs/COMPLIANCE.md#what-we-do-not-claim) for the formal non-claims.
 

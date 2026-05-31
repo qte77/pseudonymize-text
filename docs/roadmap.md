@@ -2,11 +2,11 @@
 
 For anyone planning work or comparing milestones. Concrete actionable tasks live in [GitHub Issues](https://github.com/qte77/pseudonymize-text/issues), not here.
 
-Versions follow semver; `0.0.x` is the pre-implementation scaffold (current).
+Versions follow semver; current release is `0.1.0` (see [CHANGELOG.md](../CHANGELOG.md)). `0.0.x` was the pre-implementation scaffold.
 
 ## Scope philosophy
 
-**Modular, not broad.** Core stays narrow — text trees, mail (`.eml` / `.mbox`), and seven entity types via literal / structured / NER detectors. New capabilities ship as opt-in extras (`[ner]` today, `[phi]` proposed in [#42](https://github.com/qte77/pseudonymize-text/issues/42), `[office]` deferred to 2.0). This preserves the stdlib-first dependency surface and the audit-first positioning. Pick Presidio for broader ML detection or philter for HIPAA Safe Harbor — see [landscape/de-identification.md](landscape/de-identification.md).
+**Modular, not broad.** Core stays narrow — text trees, mail (`.eml` / `.mbox`), and eight entity types via literal / structured / NER detectors. New capabilities ship as opt-in extras (`[ner]` today, `[phi]` proposed in [#42](https://github.com/qte77/pseudonymize-text/issues/42), `[office]` deferred to 2.0). This preserves the stdlib-first dependency surface and the audit-first positioning. Pick Presidio for broader ML detection or philter for HIPAA Safe Harbor — see [landscape/de-identification.md](landscape/de-identification.md).
 
 **Not on the roadmap.** Real-time HTTP / middleware redaction, image OCR / scanned-document PII, database column redaction at query time, and a GUI / web UI are explicitly **not** scoped — different products solve those.
 
