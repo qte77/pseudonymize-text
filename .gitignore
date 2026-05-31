@@ -31,8 +31,25 @@ __pycache__/
 .mcp.json
 MEMORY.md
 
-# Pseudonymize artefacts (HMAC key, mapping, report) — never commit
+# Pseudonymize runtime sandbox — input, output, plans, mappings, keys all stay local
+runs/
+local/
+
+# Pseudonymize artefacts (HMAC key, mapping, report) — belt-and-braces for runs outside runs/
 .key
 *.key
 pseudonymize-mapping.json
 pseudonymize-report.jsonl
+*-mapping.json
+*-report.jsonl
+plan*.jsonl
+discovery*.jsonl
+ignore.txt
+false-positives*.txt
+
+# User-provided term list — frequently contains the literal PII it is meant to mask
+terms.csv
+terms.json
+
+# Re-include test fixtures (the globs above would otherwise hide tests/fixtures/terms.csv etc.)
+!tests/fixtures/**
