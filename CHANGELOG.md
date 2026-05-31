@@ -13,6 +13,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `docs/assets/images/architecture-bird.svg`: hand-authored bird's-eye view of the public output lane (inputs → walker → detectors → replacer → tokenize → `./out/`) vs the secret artifacts lane (`key`, `report.jsonl`, `mapping.json`), with a trust-boundary line. Dual palette via `prefers-color-scheme`, WCAG AA-compliant green/red, responsive legend hide at <600 px. Embedded inside a collapsed `<details>` block in `docs/ARCHITECTURE.md`. Mirrors the cross-repo convention established in `qte77/doc-pipeline-engine`.
+
+### Fixed
+
+- `docs/USAGE.md`: removed 9 phantom flag rows that did not exist in `cli.py:_build_parser()` (`--allow-broad-patterns`, `--ner-model`, `--ner-confidence`, `--ner-extensions`, `--ner-stoplist`, `--ner-max-bytes`, `-v` / `--verbose`, `--quiet`, `--overwrite`) — operators following the table would hit `argparse` errors.
+- `docs/USAGE.md`: exit code `7` description widened to cover all three causes — `--mapping` or `--report` resolving inside `<out_dir>`, and `--plan` `config_hash` mismatch (was previously documented as `--plan`-only).
+- `docs/ARCHITECTURE.md` boundary-failure-policy table + `docs/SECURITY.md` adversarial-input table: plan-file containment is enforced against `<in_dir>` (not `<out_dir>` as previously documented). Matches `cli.py:_load_plan_or_rc`.
+- `docs/TERMS_CSV.md`: dead anchor `ARCHITECTURE.md#canonicalization-canonicaltext-type` repointed to `HASHING.md#2-per-type-canonicalization` (where the content actually lives).
+- `docs/roadmap.md` + `README.md`: entity-type count corrected from "seven" to "eight" — default `--types` is `name,email,phone,iban,cc,ssn,org,loc`.
+- `README.md` opening sentence: `addresses` → `locations` (matches the declared `loc` type).
+- `docs/roadmap.md`: "Versions follow semver; `0.0.x` is the pre-implementation scaffold (current)" updated — `0.1.0` is current per CHANGELOG.
+- `CHANGELOG.md`: added missing `## [0.0.2] - 2026-05-25` heading above the previously orphaned pre-implementation hardening section.
+
+### Changed
+
+- `NOTICE`: expanded with the standard Apache-2.0 boilerplate body and a scope note, matching `qte77/doc-pipeline-engine` NOTICE style per ADR-0006-equivalent intent (both repos chose Apache-2.0).
 - `docs/GLOSSARY.md`: alphabetized abbreviations table + PII vs PHI distinction citing HIPAA Journal / GDPR Local; states tool targets GDPR personal data / PII, not PHI-only HIPAA identifier categories (#43).
 - `docs/landscape/de-identification.md`: extracted from README; comparison vs Presidio + philter, "when to pick something else" matrix incl. Faker / scrubadub, rationale block for why this tool exists alongside the alternatives (#43).
 
@@ -60,7 +76,7 @@ First implementation cut. `pseudonymize detect` / `pseudonymize apply` now wire 
 - `docs/ARCHITECTURE.md`: boundary-failure-policy table extended with five new rows — `walker.walk_and_process`, `detectors.terms.load_terms`, `detectors.structured.detect_*` (wrap-continue), `detectors.ner.detect_ner`, and `cli` plan loader.
 - `docs/USAGE.md`: `--report PATH` flag documents containment rule (#25, pre-implementation; enforced in code in #34).
 
-
+## [0.0.2] - 2026-05-25
 
 Pre-implementation hardening pass. Strengthens the v0.0.1 primitives and prepares the docs/governance ground for the v0.1.0 implementation work. **No new runtime functionality** — `pseudonymize` CLI is still a stub. See [roadmap](docs/roadmap.md) for what 0.1.0 will add.
 
