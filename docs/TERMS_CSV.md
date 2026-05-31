@@ -58,7 +58,7 @@ UTF-8, top-level array of objects with the same field names:
 | `cc` | digits + spaces/dashes | `<CC:…>` |
 | `ssn` | digits + dashes | `<SSN:…>` |
 
-Matching is case-insensitive (NFKC + casefold). Hashing uses a per-type **canonical form**, not the surface form, so `Alice` and `ALICE` produce the same token. The original surface form is preserved verbatim in the mapping `value` field. See [ARCHITECTURE.md → Canonicalization](ARCHITECTURE.md#canonicalization-canonicaltext-type).
+Matching is case-insensitive (NFKC + casefold). Hashing uses a per-type **canonical form**, not the surface form, so `Alice` and `ALICE` produce the same token. The original surface form is preserved verbatim in the mapping `value` field. See [HASHING.md § 2. Per-type canonicalization](HASHING.md#2-per-type-canonicalization).
 
 ## `id` grouping
 
