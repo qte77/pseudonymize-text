@@ -3,7 +3,7 @@
 Bulk-pseudonymize sensitive entities (names, emails, phones, IBANs, SSNs, credit cards, locations, organizations) across a folder tree — deterministically and reversibly.
 
 [![License](https://img.shields.io/badge/license-Apache--2.0-58f4c2.svg)](LICENSE)
-![Version](https://img.shields.io/badge/version-0.1.0-58f4c2.svg)
+![Version](https://img.shields.io/badge/version-0.2.0-58f4c2.svg)
 [![CodeFactor](https://www.codefactor.io/repository/github/qte77/pseudonymize-text/badge)](https://www.codefactor.io/repository/github/qte77/pseudonymize-text)
 [![python](https://github.com/qte77/pseudonymize-text/actions/workflows/python.yaml/badge.svg)](https://github.com/qte77/pseudonymize-text/actions/workflows/python.yaml)
 [![markdownlint](https://github.com/qte77/pseudonymize-text/actions/workflows/markdownlint.yaml/badge.svg)](https://github.com/qte77/pseudonymize-text/actions/workflows/markdownlint.yaml)
@@ -38,14 +38,14 @@ openssl rand -hex 32 > .key
 
 # 2. Detect — writes a JSONL report; no changes to inputs or outputs
 PSEUDONYMIZE_KEY=$(cat .key) \
-  pseudonymize detect ./input --terms terms.csv --report report.jsonl
+  pseudonymize detect runs/in --terms runs/terms.csv --report runs/plan.jsonl
 
-# 3. Review report.jsonl, then apply
+# 3. Review the plan, then apply
 PSEUDONYMIZE_KEY=$(cat .key) \
-  pseudonymize apply ./input ./output --terms terms.csv --plan report.jsonl
+  pseudonymize apply runs/in runs/out --terms runs/terms.csv --plan runs/plan.jsonl
 ```
 
-`./output` mirrors `./input` with sensitive strings replaced by `<TYPE:hash>` tokens (e.g. `<NAME:7f3a9c8b…>`). `pseudonymize-mapping.json` is written next to (not inside) `./output`.
+`runs/out` mirrors `runs/in` with sensitive strings replaced by `<TYPE:hash>` tokens (e.g. `<NAME:7f3a9c8b…>`). `runs/pseudonymize-mapping.json` is written next to (not inside) `runs/out`. The whole `runs/` tree is gitignored.
 
 ## Documentation
 

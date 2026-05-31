@@ -22,7 +22,7 @@ As a Data Protection Officer reviewing a pseudonymization run, I want to see a c
 
 As an operator responding to an authorized data-subject access request, I want to look up the plaintext value behind a `<TYPE:hex>` token from a sealed mapping file, so that I can produce the original record without rolling back the entire dataset.
 
-→ Covered today by `jq -r '.["<NAME:7f3a…>"].value' pseudonymize-mapping.json`; a `pseudonymize reverse` subcommand is planned for 1.0.0. See [SECURITY.md § Reverse lookup](SECURITY.md#reverse-lookup).
+→ Covered today by `jq -r '.["<NAME:7f3a…>"].value' runs/pseudonymize-mapping.json`; a `pseudonymize reverse` subcommand is planned for 1.0.0. See [SECURITY.md § Reverse lookup](SECURITY.md#reverse-lookup).
 
 ### Pipeline author — pseudonymize a mail corpus while preserving MIME structure
 
