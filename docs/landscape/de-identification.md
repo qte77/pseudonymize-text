@@ -52,4 +52,4 @@ If those four items are not load-bearing for your use case, Presidio or philter 
 
 ## Status
 
-`pseudonymize-text` is at v0.1.0 ("detect / apply pipeline shipped"). The [public Python API](../roadmap.md) (`pseudonymize_text.transform(...)`) is not stabilized until 1.0.0; current downstream consumers should pin to a specific git tag and use the CLI rather than importing internal modules.
+`pseudonymize-text` is at v0.2.0 ("detect / apply pipeline shipped"). The [public Python API](../roadmap.md) (`pseudonymize_text.transform(...)`) is not stabilized until 1.0.0; current downstream consumers should pin to a specific git tag and use the CLI rather than importing internal modules.

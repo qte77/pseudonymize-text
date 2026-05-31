@@ -91,7 +91,8 @@ Makefile            # setup / run / test / lint
 └──────────┬───────────────┘
            ▼
 ┌────────────────────────────────────────────────────────────────────┐
-│  mapping.py — pseudonymize-mapping.json (next to, not inside, out/)│
+│  mapping.py — runs/pseudonymize-mapping.json (next to, not inside,  │
+│              out/); default parent auto-created                     │
 │    JSON: { token → record }                                        │
 │    See HASHING.md §10 for the normative schema (value, canonical,  │
 │    type, id, first_seen, last_seen, occurrences).                  │

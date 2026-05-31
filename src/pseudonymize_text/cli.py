@@ -47,7 +47,9 @@ def _build_parser() -> argparse.ArgumentParser:
     common.add_argument("--terms", type=Path)
     common.add_argument("--no-terms", action="store_true")
     common.add_argument("--key-file", type=Path)
-    common.add_argument("--report", type=Path, default=Path("./pseudonymize-report.jsonl"))
+    common.add_argument(
+        "--report", type=Path, default=Path("./runs/pseudonymize-report.jsonl")
+    )
     common.add_argument(
         "--report-format", choices=("jsonl", "tsv"), default="jsonl"
     )
@@ -71,7 +73,7 @@ def _build_parser() -> argparse.ArgumentParser:
     apply_p.add_argument("in_dir", type=Path)
     apply_p.add_argument("out_dir", type=Path)
     apply_p.add_argument(
-        "--mapping", type=Path, default=Path("./pseudonymize-mapping.json")
+        "--mapping", type=Path, default=Path("./runs/pseudonymize-mapping.json")
     )
     apply_p.add_argument("--plan", type=Path)
 
@@ -356,6 +358,7 @@ def _make_report_writer(
 def _run_detect(args: argparse.Namespace, key: bytes, terms: list) -> int:
     """Walk in_dir, detect spans, write a JSONL report. Returns exit code."""
     in_dir = args.in_dir.resolve()
+    args.report.parent.mkdir(parents=True, exist_ok=True)
     header = ReportHeader(
         schema="pseudonymize.report/1",
         tool_version=__version__,
@@ -420,6 +423,8 @@ def _run_apply(args: argparse.Namespace, key: bytes, terms: list) -> int:
 
     in_dir = args.in_dir.resolve()
     out_dir = args.out_dir
+    args.report.parent.mkdir(parents=True, exist_ok=True)
+    args.mapping.parent.mkdir(parents=True, exist_ok=True)
     header = ReportHeader(
         schema="pseudonymize.report/1",
         tool_version=__version__,

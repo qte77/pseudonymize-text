@@ -31,7 +31,7 @@ If neither key source is set, exit code `3`. If `--terms` cannot be read or pars
 | `--detectors LIST` | `literal,structured` | Comma list from `literal`, `structured`, `ner`. |
 | `--types LIST` | `name,email,phone,iban,cc,ssn,org,loc` | **Filter** on entity types — does not enable detectors. Types not produced by enabled detectors are simply unused. |
 | `--key-file PATH` | — | Read HMAC key from this file (overrides env var). |
-| `--report PATH` | `./pseudonymize-report.jsonl` | Where to write the audit report. Must **not** reside inside `<out_dir>`; exit `7` otherwise (same rule as `--mapping`, since the report holds plaintext spans). |
+| `--report PATH` | `./runs/pseudonymize-report.jsonl` | Where to write the audit report. Parent directory is auto-created. Must **not** reside inside `<out_dir>`; exit `7` otherwise (same rule as `--mapping`, since the report holds plaintext spans). |
 | `--report-format FMT` | `jsonl` | `jsonl` or `tsv`. |
 | `--ignore FILE` | — | Suppression list (one literal per line, `#` comments). Matches a span's surface `text` field; comparison is NFKC + casefold. |
 | `--ner` | off | Enable NER detector (requires `[ner]` extra). |
@@ -41,7 +41,7 @@ If neither key source is set, exit code `3`. If `--terms` cannot be read or pars
 | Flag | Default | Purpose |
 |---|---|---|
 | `--plan FILE` | — | Re-use the spans from a prior `detect` JSONL report instead of re-detecting. When given, `--terms` becomes optional and is ignored; `--detectors` and `--types` are read from the plan header. The HMAC key is still required (tokens are recomputed from the key, so the plan is portable across keys). |
-| `--mapping PATH` | `./pseudonymize-mapping.json` | Where to write the token → plaintext map (must be **outside** `<out_dir>` — see [SECURITY.md](SECURITY.md)). |
+| `--mapping PATH` | `./runs/pseudonymize-mapping.json` | Where to write the token → plaintext map. Parent directory is auto-created. Must be **outside** `<out_dir>` — see [SECURITY.md](SECURITY.md). |
 
 `apply` always emits a report (echoing the plan when `--plan` is given). See [ARCHITECTURE.md → Report Schema](ARCHITECTURE.md#report-schema-jsonl).
 
@@ -70,55 +70,59 @@ If neither key source is set, exit code `3`. If `--terms` cannot be read or pars
 openssl rand -hex 32 > .key
 chmod 600 .key
 
+# Stage every artefact under runs/ — the directory is gitignored
+mkdir -p runs
+
 # 1. Detect — audit the plan
 PSEUDONYMIZE_KEY=$(cat .key) \
-  pseudonymize detect ./corpus \
-    --terms terms.csv \
-    --report plan.jsonl
+  pseudonymize detect runs/in \
+    --terms runs/terms.csv \
+    --report runs/plan.jsonl
 
 # 2. Review plan.jsonl; build an --ignore list of false positives if needed
-jq -r 'select(.detector | startswith("ner")) | "\(.text)\t\(.confidence)\t\(.file)"' plan.jsonl
+jq -r 'select(.detector | startswith("ner")) | "\(.text)\t\(.confidence)\t\(.file)"' runs/plan.jsonl
 
 # 3. Apply — byte-identical to the audited plan
 PSEUDONYMIZE_KEY=$(cat .key) \
-  pseudonymize apply ./corpus ./out \
-    --terms terms.csv \
-    --plan plan.jsonl \
-    --ignore false-positives.txt \
-    --mapping ./pseudonymize-mapping.json
+  pseudonymize apply runs/in runs/out \
+    --terms runs/terms.csv \
+    --plan runs/plan.jsonl \
+    --ignore runs/false-positives.txt \
+    --mapping runs/mapping.json \
+    --report runs/report.jsonl
 ```
 
 After `apply`, three artifacts exist:
 
-- `./out/` — mirrored corpus with tokens (safe to share).
-- `./pseudonymize-mapping.json` — token ↔ plaintext map (treat as **secret**).
-- `./pseudonymize-report.jsonl` — audit trail of what was substituted (treat as secret if it contains plaintext).
+- `runs/out/` — mirrored corpus with tokens (safe to share).
+- `runs/mapping.json` — token ↔ plaintext map (treat as **secret**).
+- `runs/report.jsonl` — audit trail of what was substituted (treat as secret if it contains plaintext).
 
 ## Examples
 
 **Discovery pass** (NER only, no writes; surface unknown entities to add to `terms.csv`):
 
 ```bash
-pseudonymize detect ./corpus \
-  --terms terms.csv \
+pseudonymize detect runs/in \
+  --terms runs/terms.csv \
   --detectors ner \
   --ner --ner-confidence 0.9 \
-  --report discovery.jsonl
+  --report runs/discovery.jsonl
 ```
 
 **Structured-only pass** (find all IBANs/SSNs irrespective of term list):
 
 ```bash
-pseudonymize detect ./corpus --no-terms \
+pseudonymize detect runs/in --no-terms \
   --detectors structured \
   --types iban,cc,ssn \
-  --report structured.jsonl
+  --report runs/structured.jsonl
 ```
 
 **Single trusted-corpus run** (skip explicit `detect`):
 
 ```bash
-pseudonymize apply ./corpus ./out --terms terms.csv
+pseudonymize apply runs/in runs/out --terms runs/terms.csv
 ```
 
 A report is still written — `apply` never runs blind.
@@ -128,10 +132,10 @@ A report is still written — `apply` never runs blind.
 `.eml` and `.mbox` extensions are auto-routed through `formats/` per [ADR_002](decisions/ADR_002.md) — no extra flag. Headers (incl. RFC 2047 encoded), `text/plain`, and `text/html` parts are pseudonymized; non-text parts are replaced with a `[part removed by pseudonymize: <ctype>; <N> bytes]` stub; `DKIM-Signature` and `ARC-*` headers are stripped (signatures are invalid after rewrite); `.mbox` inputs fan out to per-message `.eml` files at `<out_dir>/<basename>/<seq>.eml` — no mbox re-assembly.
 
 ```bash
-pseudonymize detect ./mail-in --terms terms.csv --ner --report plan.jsonl
-# review plan.jsonl (especially NER spans), build false-positives.txt
-pseudonymize apply ./mail-in ./mail-out \
-  --terms terms.csv --plan plan.jsonl --ignore false-positives.txt
+pseudonymize detect runs/mail-in --terms runs/terms.csv --ner --report runs/plan.jsonl
+# review runs/plan.jsonl (especially NER spans), build runs/false-positives.txt
+pseudonymize apply runs/mail-in runs/mail-out \
+  --terms runs/terms.csv --plan runs/plan.jsonl --ignore runs/false-positives.txt
 ```
 
 For unsupported PHI categories in clinical mail, see [landscape/de-identification.md](landscape/de-identification.md). The part-fate table lives in [ARCHITECTURE.md § Mail-format support](ARCHITECTURE.md#mail-format-support).

@@ -9,8 +9,8 @@ This document describes what an attacker can and cannot do given each combinatio
 | Artifact | Default path | Sensitivity |
 |---|---|---|
 | HMAC key | `./.key` (user-chosen) | **Secret.** Anyone with the key can re-derive any token from a guessed plaintext. |
-| Mapping file | `./pseudonymize-mapping.json` (next to but **outside** `<out_dir>`) | **Secret.** Direct token → plaintext lookup. |
-| JSONL report | `./pseudonymize-report.jsonl` | **Secret** (contains plaintext spans). |
+| Mapping file | `./runs/pseudonymize-mapping.json` (next to but **outside** `<out_dir>`) | **Secret.** Direct token → plaintext lookup. |
+| JSONL report | `./runs/pseudonymize-report.jsonl` | **Secret** (contains plaintext spans). |
 | Term list | `--terms FILE` | **Secret** (lists every sensitive value the operator chose to pseudonymize). |
 | Mirrored output | `<out_dir>/` | **Distributable** under the operator's release process. |
 
@@ -37,7 +37,7 @@ The design assumes the operator can keep at least the **mapping** (or the **key 
 | Key file mode `0600` | Recommended | Operator responsibility; tool warns on world-readable key files. |
 | Mapping file mode `0600` | Recommended | Operator responsibility. |
 | Key from CSPRNG, ≥ 256 bits | Recommended | `openssl rand -hex 32` produces 32 bytes / 256 bits. |
-| Key stored outside repo | Recommended | Add `.key`, `*.key`, `pseudonymize-mapping.json`, `pseudonymize-report.jsonl` to `.gitignore`. |
+| Key stored outside repo | Recommended | Repo ships a `runs/` sandbox + per-artefact globs (`.key`, `*.key`, `pseudonymize-mapping.json`, `pseudonymize-report.jsonl`, `terms.csv`, `*-mapping.json`, `*-report.jsonl`, `plan*.jsonl`) so the default layout is gitignored. |
 
 ## Cryptographic choices
 

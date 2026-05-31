@@ -2,7 +2,7 @@
 
 For anyone planning work or comparing milestones. Concrete actionable tasks live in [GitHub Issues](https://github.com/qte77/pseudonymize-text/issues), not here.
 
-Versions follow semver; current release is `0.1.0` (see [CHANGELOG.md](../CHANGELOG.md)). `0.0.x` was the pre-implementation scaffold.
+Versions follow semver; current release is `0.2.0` (see [CHANGELOG.md](../CHANGELOG.md)). `0.0.x` was the pre-implementation scaffold.
 
 ## Scope philosophy
 
@@ -26,7 +26,15 @@ Build order chosen for testability — primitives first (no I/O, no third-party 
 8. `cli.py` — `detect` and `apply` subcommands wiring the above.
 9. End-to-end tests + sample term lists in `tests/fixtures/`.
 
-## 0.2.0 — convenience
+## 0.2.0 — runtime sandbox + default paths
+
+Goal: keep runtime artefacts out of the repo by default and align CLI defaults with the documented `runs/` convention.
+
+- `.gitignore` ships a `runs/` (+ `local/`) sandbox plus per-artefact globs (`*-mapping.json`, `*-report.jsonl`, `plan*.jsonl`, `discovery*.jsonl`, `false-positives*.txt`, `ignore.txt`) and term-list globs (`terms.csv`, `terms.json`); `!tests/fixtures/**` re-include protects shipped fixtures.
+- `cli.py`: `--report` and `--mapping` default to `./runs/pseudonymize-{report.jsonl,mapping.json}`; parent directory is auto-created on first write.
+- Docs (`README.md`, `docs/USAGE.md`, `docs/SECURITY.md`, `docs/ARCHITECTURE.md`, `docs/USER_STORIES.md`) re-aligned with the convention.
+
+## 0.3.0 — convenience
 
 - `--expand-names` auto-variants (with collision detection).
 - Pre-commit hook variant.
