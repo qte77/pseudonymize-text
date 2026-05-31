@@ -67,7 +67,7 @@ Full token design rationale (canonicalization, `kind` namespacing, alternatives 
 |---|---|---|
 | `terms.csv` (operator- or LLM-generated) | ReDoS via wildcard patterns expanding to catastrophic backtracking. | Structural guard rejects `(\.\*){2,}` / `(\?\+){1,}` at load (exit 4); per-match length cap `MAX_MATCH_LEN = 4096`; `--allow-broad-patterns` does not override the structural guard. |
 | `--ignore` file | Zero-width / format characters in entries cause silent suppression failure. | NFKC + strip Unicode categories `Cf` and non-ASCII `Zs`; log `WARNING` on stripped chars. |
-| `--plan` JSONL | `ReportRecord.file` field with `..` / absolute paths mirroring outside `<out_dir>`. | Containment check at plan-load (exit 4); resolved path must be under `<out_dir>`. |
+| `--plan` JSONL | `ReportRecord.file` field with `..` / absolute paths mirroring outside `<in_dir>`. | Containment check at plan-load (exit 4); resolved path must be under `<in_dir>`. |
 | Input file size | Multi-GB single files exhausting memory. | `MAX_FILE_BYTES` (default 256 MB) on walker; `MAX_MAPPING_BYTES` on `mapping.load_mapping`. Exit 6 with clear message. |
 
 ## LLM and downstream consumption

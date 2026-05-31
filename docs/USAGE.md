@@ -34,15 +34,7 @@ If neither key source is set, exit code `3`. If `--terms` cannot be read or pars
 | `--report PATH` | `./pseudonymize-report.jsonl` | Where to write the audit report. Must **not** reside inside `<out_dir>`; exit `7` otherwise (same rule as `--mapping`, since the report holds plaintext spans). |
 | `--report-format FMT` | `jsonl` | `jsonl` or `tsv`. |
 | `--ignore FILE` | — | Suppression list (one literal per line, `#` comments). Matches a span's surface `text` field; comparison is NFKC + casefold. |
-| `--allow-broad-patterns` | off | Permit term-list patterns that match `*`/`*@*`/`?`. |
 | `--ner` | off | Enable NER detector (requires `[ner]` extra). |
-| `--ner-model NAME` | `xx_ent_wiki_sm` | spaCy model name. |
-| `--ner-confidence FLOAT` | `0.85` | Drop NER spans below this score. |
-| `--ner-extensions LIST` | `.txt,.md,.log` | File extensions where NER runs. |
-| `--ner-stoplist FILE` | — | Words NER must never tag (one per line). |
-| `--ner-max-bytes N` | `5242880` (5 MB) | Skip NER on files larger than this; literals/structured still run. |
-| `-v`, `--verbose` | off | Per-file progress. |
-| `--quiet` | off | Suppress non-error output. |
 
 ### `apply` only
 
@@ -50,7 +42,6 @@ If neither key source is set, exit code `3`. If `--terms` cannot be read or pars
 |---|---|---|
 | `--plan FILE` | — | Re-use the spans from a prior `detect` JSONL report instead of re-detecting. When given, `--terms` becomes optional and is ignored; `--detectors` and `--types` are read from the plan header. The HMAC key is still required (tokens are recomputed from the key, so the plan is portable across keys). |
 | `--mapping PATH` | `./pseudonymize-mapping.json` | Where to write the token → plaintext map (must be **outside** `<out_dir>` — see [SECURITY.md](SECURITY.md)). |
-| `--overwrite` | off | Allow `--mapping` and `<out_dir>` to overwrite existing files. |
 
 `apply` always emits a report (echoing the plan when `--plan` is given). See [ARCHITECTURE.md → Report Schema](ARCHITECTURE.md#report-schema-jsonl).
 
@@ -70,7 +61,7 @@ If neither key source is set, exit code `3`. If `--terms` cannot be read or pars
 | `4` | Missing or unparseable `--terms`, `--ignore`, or `--plan`. |
 | `5` | Detector initialization error (e.g. spaCy model not installed). |
 | `6` | I/O error during walk or write. |
-| `7` | `apply --plan` aborted: mapping path is inside `<out_dir>` or path-safety check failed. |
+| `7` | `apply` aborted by path-safety check: `--mapping` or `--report` resolves inside `<out_dir>`, or `--plan` `config_hash` does not match the current key fingerprint. |
 
 ## Workflow
 

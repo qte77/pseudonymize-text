@@ -2,6 +2,13 @@
 
 *For implementers and reviewers wiring the modules together.*
 
+<details>
+<summary>Architecture overview (click to expand)</summary>
+
+![pseudonymize bird's-eye — public output lane vs secret artifacts lane](assets/images/architecture-bird.svg)
+
+</details>
+
 ## Stack
 
 | Layer | Choice | Reference |
@@ -229,7 +236,7 @@ Every I/O boundary is pinned to **one** policy. Reviewers consult this table whe
 | Mapping JSON load | `mapping.load_mapping` | `fail-loud` (corrupt JSON or `ValidationError` on missing/extra fields). |
 | Mapping JSON save | `mapping.save_mapping` | `fail-loud` (disk full / permission denied propagated mid-rename; tmp file may be left behind, next save overwrites it). Tmp file is created with mode `0o600` (umask-independent) so plaintext bytes are not world-readable during the write window. |
 | Report JSONL append | `report.ReportWriter.write` | `fail-loud` (disk full / permission denied). |
-| Plan-file containment | `cli` plan loader | `fail-loud` (exit 4 if any `ReportRecord.file` contains `..`, is absolute, or resolves outside `<out_dir>`; prevents an operator-supplied plan from mirroring to arbitrary filesystem locations). |
+| Plan-file containment | `cli` plan loader | `fail-loud` (exit 4 if any `ReportRecord.file` contains `..`, is absolute, or resolves outside `<in_dir>`; prevents an operator-supplied plan from mirroring to arbitrary filesystem locations). |
 | Walker file enumeration | `walker.walk_and_process` | `fail-loud` (raises `SymlinkEscapeError` when a file symlink in `<in_dir>` resolves outside; UTF-8 decode errors propagate from `Path.read_text`; disk failures propagate from the atomic-write helper). Tmp output files are opened with mode `0o600` (umask-independent). |
 | Term-list load | `detectors.terms.load_terms` | `fail-loud` (raises `ValueError` on unsupported extension, broad pattern `*`/`*@*`/`?`/`**` without `allow_broad`, or malformed CSV/JSON; the same helper backs `lint_terms` so detector and lint cannot disagree). |
 | Structured-detector validation | `detectors.structured.detect_*` | `wrap-continue`. `python-stdnum`'s `iban.is_valid` / `luhn.is_valid` are predicates (do not raise); `phonenumbers.PhoneNumberMatcher` swallows its own parse errors and yields only valid candidates. Lookalikes that fail validation are silently skipped so a single false-positive does not abort the file. |

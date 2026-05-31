@@ -1,0 +1,105 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 980 540" role="img" aria-label="pseudonymize bird's-eye — public output lane vs secret artifacts lane">
+  <title>pseudonymize — bird's-eye view: public output vs secret artifacts</title>
+  <desc>Pseudonymize bird's-eye view. The public lane (top, green, solid) shows the data flow that produces ./out/: inputs from ./in/ and terms.csv flow through walker, detectors (terms, structured, NER), replacer (dedupe and right-to-left substitution), and tokenize (HMAC-SHA256), landing in ./out/ — safe to share. The secret lane (bottom, red, dashed) holds artifacts that must stay private: the HMAC key (from environment or --key-file), report.jsonl (audit trail emitted by detect and apply), and mapping.json (written on apply, links tokens back to plaintext). Dashed crossing arrows show the key flowing up into tokenize, replacer writing report.jsonl, and tokenize writing mapping.json. A trust boundary divides the two lanes — ./out/ is the only distributable artifact.</desc>
+  <style>
+    :root { color-scheme: light dark; }
+    .bg { fill: #ffffff; }
+    .node { fill: #f5f7fa; stroke: #1f2933; stroke-width: 1.5; }
+    .public { fill: #f0fdf4; stroke: #15803d; }
+    .secret { fill: #fef2f2; stroke: #b91c1c; stroke-dasharray: 6 4; }
+    .label { font: 600 14px system-ui, -apple-system, "Segoe UI", sans-serif; fill: #1f2933; text-anchor: middle; }
+    .label-sub { font: 500 11px ui-monospace, "SFMono-Regular", monospace; fill: #52606d; text-anchor: middle; }
+    .lane-label { font: 700 12px system-ui, -apple-system, "Segoe UI", sans-serif; fill: #1f2933; text-anchor: start; }
+    .lane-sub { font: 500 10px ui-monospace, "SFMono-Regular", monospace; fill: #52606d; text-anchor: start; }
+    .public-label { fill: #15803d; }
+    .secret-label { fill: #b91c1c; }
+    .edge { stroke: #1f2933; stroke-width: 1.5; fill: none; marker-end: url(#arrow); }
+    .edge-secret { stroke: #b91c1c; stroke-width: 1.25; stroke-dasharray: 4 3; fill: none; marker-end: url(#arrow); }
+    .edge-label { font: 500 11px ui-monospace, "SFMono-Regular", monospace; fill: #52606d; text-anchor: middle; }
+    .boundary { stroke: #6b7280; stroke-width: 1; stroke-dasharray: 2 4; opacity: 0.6; }
+    .boundary-label { font: 500 10px ui-monospace, "SFMono-Regular", monospace; fill: #52606d; text-anchor: middle; }
+    .arrow-head { fill: #1f2933; }
+    @media (max-width: 600px) {
+      .lane-label, .lane-sub, .boundary-label { display: none; }
+    }
+    @media (prefers-color-scheme: dark) {
+      .bg { fill: #0d1117; }
+      .node { fill: #161b22; stroke: #c9d1d9; }
+      .public { fill: #052e16; stroke: #86efac; }
+      .secret { fill: #450a0a; stroke: #fca5a5; }
+      .label, .lane-label { fill: #c9d1d9; }
+      .label-sub, .lane-sub, .edge-label, .boundary-label { fill: #8b949e; }
+      .public-label { fill: #86efac; }
+      .secret-label { fill: #fca5a5; }
+      .edge { stroke: #c9d1d9; }
+      .edge-secret { stroke: #fca5a5; }
+      .boundary { stroke: #9ca3af; }
+      .arrow-head { fill: #c9d1d9; }
+    }
+  </style>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path class="arrow-head" d="M0,0 L10,5 L0,10 z" />
+    </marker>
+  </defs>
+  <rect class="bg" width="100%" height="100%" />
+
+  <text class="lane-label public-label" x="20" y="46">public lane</text>
+  <text class="lane-sub public-label" x="20" y="64">safe to share · solid</text>
+  <text class="lane-label secret-label" x="20" y="366">secret lane</text>
+  <text class="lane-sub secret-label" x="20" y="384">keep private · dashed</text>
+
+  <line class="boundary" x1="20" y1="255" x2="960" y2="255" />
+  <text class="boundary-label" x="490" y="248">trust boundary — ./out/ is distributable; below is not</text>
+
+  <rect class="node public" x="20" y="80" width="110" height="60" rx="8" />
+  <text class="label" x="75" y="106">inputs</text>
+  <text class="label-sub" x="75" y="124">./in · terms.csv</text>
+
+  <rect class="node public" x="170" y="80" width="100" height="60" rx="8" />
+  <text class="label" x="220" y="106">walker</text>
+  <text class="label-sub" x="220" y="124">mirror in→out</text>
+
+  <rect class="node public" x="310" y="80" width="160" height="60" rx="8" />
+  <text class="label" x="390" y="106">detectors</text>
+  <text class="label-sub" x="390" y="124">terms · structured · ner</text>
+
+  <rect class="node public" x="510" y="80" width="110" height="60" rx="8" />
+  <text class="label" x="565" y="106">replacer</text>
+  <text class="label-sub" x="565" y="124">dedupe · RTL sub</text>
+
+  <rect class="node public" x="660" y="80" width="120" height="60" rx="8" />
+  <text class="label" x="720" y="106">tokenize</text>
+  <text class="label-sub" x="720" y="124">HMAC-SHA256</text>
+
+  <rect class="node public" x="820" y="80" width="100" height="60" rx="8" />
+  <text class="label" x="870" y="106">./out/</text>
+  <text class="label-sub" x="870" y="124">tokens</text>
+
+  <path class="edge" d="M130,110 L170,110" />
+  <text class="edge-label" x="150" y="102">text</text>
+  <path class="edge" d="M270,110 L310,110" />
+  <text class="edge-label" x="290" y="102">text</text>
+  <path class="edge" d="M470,110 L510,110" />
+  <text class="edge-label" x="490" y="102">Span[]</text>
+  <path class="edge" d="M620,110 L660,110" />
+  <text class="edge-label" x="640" y="102">subject</text>
+  <path class="edge" d="M780,110 L820,110" />
+  <text class="edge-label" x="800" y="102">token</text>
+
+  <rect class="node secret" x="20" y="400" width="140" height="60" rx="8" />
+  <text class="label" x="90" y="426">key</text>
+  <text class="label-sub" x="90" y="444">env | --key-file</text>
+
+  <rect class="node secret" x="440" y="400" width="130" height="60" rx="8" />
+  <text class="label" x="505" y="426">report.jsonl</text>
+  <text class="label-sub" x="505" y="444">detect + apply</text>
+
+  <rect class="node secret" x="720" y="400" width="130" height="60" rx="8" />
+  <text class="label" x="785" y="426">mapping.json</text>
+  <text class="label-sub" x="785" y="444">apply only</text>
+
+  <path class="edge-secret" d="M90,400 C 90,260 680,260 680,140" />
+  <path class="edge-secret" d="M565,140 C 565,250 505,250 505,400" />
+  <path class="edge-secret" d="M760,140 C 760,250 785,250 785,400" />
+</svg>
