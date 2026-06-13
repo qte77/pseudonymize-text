@@ -6,6 +6,10 @@
 # - "github-actions" keeps the SHA-pinned action references in
 #   .github/workflows/ up to date with new tags. Repo rule requires
 #   full commit SHA pins, which dependabot will keep current.
+#
+# Grouping: minor + patch bumps land as one PR per ecosystem per week to
+# reduce PR sprawl. Major bumps stay separate so breaking changes get
+# their own review.
 version: 2
 updates:
   - package-ecosystem: "uv"
@@ -17,6 +21,11 @@ updates:
     labels:
       - "dependencies"
       - "python"
+    groups:
+      python-minor-patch:
+        update-types:
+          - "minor"
+          - "patch"
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
@@ -26,4 +35,9 @@ updates:
     labels:
       - "dependencies"
       - "github-actions"
+    groups:
+      actions-minor-patch:
+        update-types:
+          - "minor"
+          - "patch"
 ...
