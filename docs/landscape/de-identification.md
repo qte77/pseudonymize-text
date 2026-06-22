@@ -29,7 +29,7 @@ This page enumerates the de-identification / pseudonymization tools we evaluated
 | Broad multi-language PII detection out of the box with mature ML recognizers | [Presidio](https://github.com/microsoft/presidio) |
 | Synthetic data generation rather than reversible pseudonymization | [Faker](https://github.com/joke2k/faker) |
 | Library-API PII redaction with typed placeholders (Python) | [scrubadub](https://github.com/LeapBeyond/scrubadub) (last release 2023) |
-| PHI-specific identifiers (MRN, NPI, DEA, VIN, device IDs) | [philter](https://github.com/BCHSI/philter-ucsf) or Presidio's medical recognizers — **not** detected by `pseudonymize-text` (see [GLOSSARY.md § PII vs PHI](../GLOSSARY.md#pii-vs-phi)) |
+| PHI-specific identifiers: MRN, device IDs, full HIPAA coverage (NPI/DEA/VIN are detectable opt-in — `--detectors phi`, see [PHI.md](../PHI.md)) | [philter](https://github.com/BCHSI/philter-ucsf) or Presidio's medical recognizers (see [GLOSSARY.md § PII vs PHI](../GLOSSARY.md#pii-vs-phi)) |
 
 ## Mail corpora
 

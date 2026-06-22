@@ -18,7 +18,7 @@
 - **Lightweight** — Python stdlib + two small deps (`python-stdnum`, `phonenumberslite`). Optional spaCy NER via `[ner]` extra.
 - **Audit-first** — `detect` produces a JSONL plan; `apply` executes it byte-identically.
 
-> **What this isn't** — not anonymization (output is still personal data), and out of scope for PHI-only HIPAA identifiers (MRN, NPI, device IDs), image OCR, and binary mail attachments. See [docs/USER_STORIES.md](docs/USER_STORIES.md) for coverage by support level and [docs/COMPLIANCE.md § What we do not claim](docs/COMPLIANCE.md#what-we-do-not-claim) for the formal non-claims.
+> **What this isn't** — not anonymization (output is still personal data). PHI support is limited: checksum-validated NPI/DEA/VIN are opt-in (`--detectors phi`, see [docs/PHI.md](docs/PHI.md)), but MRN, device IDs, image OCR, and binary mail attachments are out of scope. See [docs/USER_STORIES.md](docs/USER_STORIES.md) for coverage by support level and [docs/COMPLIANCE.md § What we do not claim](docs/COMPLIANCE.md#what-we-do-not-claim) for the formal non-claims.
 
 ## How
 
