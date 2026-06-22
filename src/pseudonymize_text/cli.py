@@ -17,7 +17,7 @@ from pydantic import ValidationError
 
 from . import __version__, formats
 from ._schemas import MappingRecord, ReportHeader, ReportRecord
-from .detectors.phi import detect_dea, detect_npi, detect_vin
+from .detectors.phi import detect_dea, detect_mrn, detect_npi, detect_vin
 from .detectors.structured import (
     detect_credit_cards,
     detect_emails,
@@ -67,6 +67,11 @@ def _build_parser() -> argparse.ArgumentParser:
         help="comma list of entity types to keep",
     )
     common.add_argument("--ner", action="store_true", help="enable NER (requires [ner] extra)")
+    common.add_argument(
+        "--phi-context",
+        action="store_true",
+        help="with --detectors phi, also detect context-cued MRNs (no checksum)",
+    )
     common.add_argument(
         "--allow-broad-patterns",
         action="store_true",
@@ -132,6 +137,12 @@ def main(argv: list[str] | None = None) -> int:
     if args.ner:
         args.enabled_detectors.add("ner")
     args.enabled_types = {t.strip() for t in args.types.split(",") if t.strip()}
+    # --phi-context turns on contextual MRN detection (only fires with
+    # `phi` enabled); auto-enable the `mrn` type so the user need not also
+    # pass --types ...,mrn.
+    if args.phi_context:
+        args.enabled_detectors.add("phi_context")
+        args.enabled_types.add("mrn")
 
     if args.subcommand == "apply":
         path_safety = _check_apply_path_safety(args)
@@ -306,6 +317,8 @@ def _detect_spans_for_text(
         for type_, fn in _PHI_DISPATCH.items():
             if type_ in enabled_types:
                 spans.extend(fn(text))
+        if "phi_context" in enabled_detectors and "mrn" in enabled_types:
+            spans.extend(detect_mrn(text))
     if "ner" in enabled_detectors:
         from .detectors.ner import detect_ner  # lazy import
 

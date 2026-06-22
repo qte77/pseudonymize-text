@@ -29,8 +29,18 @@ pseudonymize detect runs/in --no-terms --detectors phi --report runs/phi.jsonl
 
 Combine with the default detectors as needed: `--detectors literal,structured,phi`.
 
+## Contextual MRN (opt-in)
+
+Medical record numbers have no universal checksum, so MRN detection is **context-gated** and requires `--phi-context` in addition to `--detectors phi`:
+
+```bash
+pseudonymize detect runs/in --no-terms --detectors phi --phi-context --report runs/phi.jsonl
+```
+
+A 6–10 digit run is flagged only when an MRN cue (`MRN`, `Medical Record Number`, `Rec #`, …) appears within 60 characters. This is **higher false-positive** than the checksum-validated types above — review the report and route false positives to an `--ignore` list. Tokens are `<MRN:…>`; `--phi-context` auto-enables the `mrn` type.
+
 ## Not covered
 
-- **MRN** (medical record numbers) — site-specific formats with no universal checksum; supply known values via `terms.csv`.
+- **MRN with no nearby cue** — only context-cued medical record numbers are flagged (see above); isolated values need a `terms.csv` entry.
 - **Date coarsening** (HIPAA Safe Harbor §164.514(b)(2)) and **clinical NER** (a license-gated model) — tracked under [#42](https://github.com/qte77/pseudonymize-text/issues/42), not yet implemented.
 - Health-plan IDs, account / certificate numbers, biometric identifiers, full-face photos, device identifiers — out of scope; use [philter](https://github.com/BCHSI/philter-ucsf) / [philter-lite](https://github.com/SironaMedical/philter-lite) or Presidio's medical recognizers.

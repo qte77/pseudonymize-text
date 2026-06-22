@@ -2,7 +2,12 @@
 
 from collections.abc import Iterable
 
-from pseudonymize_text.detectors.phi import detect_dea, detect_npi, detect_vin
+from pseudonymize_text.detectors.phi import (
+    detect_dea,
+    detect_mrn,
+    detect_npi,
+    detect_vin,
+)
 from pseudonymize_text.replacer import Span
 
 
@@ -35,3 +40,36 @@ def test_spans_carry_type_and_detector() -> None:
     (npi,) = list(detect_npi("NPI 1234567893 today."))
     assert npi.type == "npi"
     assert npi.detector == "phi:npi"
+
+
+# --- Contextual MRN (E2-A) ---------------------------------------------------
+# MRNs have no checksum, so detection is gated on a nearby cue word and is
+# higher false-positive than the checksum-validated types above.
+
+
+def test_detect_mrn_with_preceding_cue() -> None:
+    (mrn,) = list(detect_mrn("Patient MRN 1234567 admitted"))
+    assert (mrn.type, mrn.text, mrn.detector) == ("mrn", "1234567", "phi:mrn")
+
+
+def test_detect_mrn_with_following_cue() -> None:
+    assert _texts(detect_mrn("1234567 (Medical Record Number)")) == {"1234567"}
+
+
+def test_detect_mrn_cue_case_insensitive() -> None:
+    assert _texts(detect_mrn("mrn: 7654321")) == {"7654321"}
+
+
+def test_detect_mrn_requires_a_cue() -> None:
+    assert list(detect_mrn("Order number 1234567 shipped")) == []
+
+
+def test_detect_mrn_ignores_too_short_runs() -> None:
+    assert list(detect_mrn("MRN 12345")) == []
+
+
+def test_detect_mrn_context_window_boundary() -> None:
+    near = "MRN" + " " * 60 + "123456"
+    far = "MRN" + " " * 61 + "123456"
+    assert _texts(detect_mrn(near)) == {"123456"}
+    assert list(detect_mrn(far)) == []

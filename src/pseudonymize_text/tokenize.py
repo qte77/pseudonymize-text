@@ -19,7 +19,7 @@ def canonicalize(value: str, type_: str) -> str:
         return f"+{parsed.country_code}{parsed.national_number}"
     if type_ == "iban":
         return re.sub(r"\s+", "", value).upper()
-    if type_ in ("cc", "ssn", "npi"):
+    if type_ in ("cc", "ssn", "npi", "mrn"):
         return re.sub(r"\D", "", value)
     if type_ in ("dea", "vin"):
         return re.sub(r"\s+", "", value).upper()
