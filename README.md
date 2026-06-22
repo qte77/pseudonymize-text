@@ -1,13 +1,16 @@
-# pseudonymize
+# pseudonymize-text
 
-Bulk-pseudonymize sensitive entities (names, emails, phones, IBANs, SSNs, credit cards, locations, organizations) across a folder tree — deterministically and reversibly.
+> Bulk-pseudonymize sensitive entities (names, emails, phones, IBANs, SSNs, credit cards, locations, organizations) across a folder tree — deterministically and reversibly.
 
 [![License](https://img.shields.io/badge/license-Apache--2.0-58f4c2.svg)](LICENSE)
-![Version](https://img.shields.io/badge/version-0.2.0-58f4c2.svg)
+[![Version](https://img.shields.io/badge/version-0.2.0-58f4c2.svg)](CHANGELOG.md)
+[![CodeQL](https://github.com/qte77/pseudonymize-text/actions/workflows/codeql.yaml/badge.svg)](https://github.com/qte77/pseudonymize-text/actions/workflows/codeql.yaml)
 [![CodeFactor](https://www.codefactor.io/repository/github/qte77/pseudonymize-text/badge)](https://www.codefactor.io/repository/github/qte77/pseudonymize-text)
 [![python](https://github.com/qte77/pseudonymize-text/actions/workflows/python.yaml/badge.svg)](https://github.com/qte77/pseudonymize-text/actions/workflows/python.yaml)
 [![markdownlint](https://github.com/qte77/pseudonymize-text/actions/workflows/markdownlint.yaml/badge.svg)](https://github.com/qte77/pseudonymize-text/actions/workflows/markdownlint.yaml)
 [![links](https://github.com/qte77/pseudonymize-text/actions/workflows/links.yaml/badge.svg)](https://github.com/qte77/pseudonymize-text/actions/workflows/links.yaml)
+
+## What
 
 - **Deterministic** — same input + same key → same token, every run, every machine.
 - **Reversible** via the mapping file (kept separate from output and key).
@@ -15,24 +18,14 @@ Bulk-pseudonymize sensitive entities (names, emails, phones, IBANs, SSNs, credit
 - **Lightweight** — Python stdlib + two small deps (`python-stdnum`, `phonenumberslite`). Optional spaCy NER via `[ner]` extra.
 - **Audit-first** — `detect` produces a JSONL plan; `apply` executes it byte-identically.
 
-## Use cases
+> **What this isn't** — not anonymization (output is still personal data), and out of scope for PHI-only HIPAA identifiers (MRN, NPI, device IDs), image OCR, and binary mail attachments. See [docs/USER_STORIES.md](docs/USER_STORIES.md) for coverage by support level and [docs/COMPLIANCE.md § What we do not claim](docs/COMPLIANCE.md#what-we-do-not-claim) for the formal non-claims.
 
-**Covered**: bulk pseudonymization of text trees (`.txt`, `.md`, `.log`, `.py`, `.json`, `.yaml`, `.csv`, `.toml`, `.ini`) and mail corpora (`.eml`, `.mbox`); eight entity types (name, email, phone, IBAN, credit card, SSN, organization, location) via literal + structured detectors plus optional spaCy NER; deterministic + reversible HMAC-SHA256 with an audit-first detect/apply CLI.
-
-**Not covered**: PHI-only HIPAA identifiers (MRN, NPI, device IDs, biometric); anonymization (output is still personal data); linkage attacks via writing style / timestamps / metadata; binary mail attachments (dropped with stub); image OCR; database column redaction at query time; real-time HTTP middleware redaction. See [docs/USER_STORIES.md](docs/USER_STORIES.md) for capability-level coverage and [docs/COMPLIANCE.md § What we do not claim](docs/COMPLIANCE.md#what-we-do-not-claim) for the formal non-claims.
-
-**Deferred**: PDF and Office formats, streaming for files > 256 MB, parallel processing, encrypted mapping at rest, public Python API — see [docs/roadmap.md](docs/roadmap.md).
-
-## Install
+## How
 
 ```bash
-uv add pseudonymize           # core
-uv add 'pseudonymize[ner]'    # optional spaCy NER
-```
+# install (core; the spaCy NER extra is optional)
+uv add pseudonymize-text          # or: uv add 'pseudonymize-text[ner]'
 
-## Quickstart
-
-```bash
 # 1. Generate a secret key (one-time, store outside the repo)
 openssl rand -hex 32 > .key
 
@@ -45,28 +38,27 @@ PSEUDONYMIZE_KEY=$(cat .key) \
   pseudonymize apply runs/in runs/out --terms runs/terms.csv --plan runs/plan.jsonl
 ```
 
-`runs/out` mirrors `runs/in` with sensitive strings replaced by `<TYPE:hash>` tokens (e.g. `<NAME:7f3a9c8b…>`). `runs/pseudonymize-mapping.json` is written next to (not inside) `runs/out`. The whole `runs/` tree is gitignored.
+`runs/out` mirrors `runs/in` with sensitive strings replaced by `<TYPE:hash>` tokens (e.g. `<NAME:7f3a9c8b…>`); `runs/pseudonymize-mapping.json` is written next to (not inside) `runs/out`, and the whole `runs/` tree is gitignored. See [docs/USAGE.md](docs/USAGE.md) for the full CLI reference.
 
-## Documentation
+## Why
 
-| Doc | Purpose |
-|---|---|
-| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Modules, data flow, stack |
-| [docs/USAGE.md](docs/USAGE.md) | CLI reference: subcommands, flags, exit codes |
-| [docs/TERMS_CSV.md](docs/TERMS_CSV.md) | Input schema (`id`, `value`, `type`, wildcards) |
-| [docs/COMPLIANCE.md](docs/COMPLIANCE.md) | GDPR / ENISA / EDPB / NIST posture |
-| [docs/SECURITY.md](docs/SECURITY.md) | Threat model, key & mapping handling |
-| [docs/HASHING.md](docs/HASHING.md) | Token construction, canonicalization, stability — design rationale |
-| [docs/GLOSSARY.md](docs/GLOSSARY.md) | Abbreviations, PII vs PHI, terms of art |
-| [docs/USER_STORIES.md](docs/USER_STORIES.md) | User stories grouped by support level (supported / partial / out of scope) |
-| [docs/landscape/de-identification.md](docs/landscape/de-identification.md) | Alternatives (Presidio, philter) and when to pick them |
-| [docs/decisions/](docs/decisions/) | Architectural decisions ([MADR](https://adr.github.io/madr/) format) |
-| [AGENTS.md](AGENTS.md) | Behavioral rules for AI coding agents |
-| [CHANGELOG.md](CHANGELOG.md) | Version history (Keep-a-Changelog) |
+Reversible pseudonymization sits between one-way redaction and full anonymization. Incumbents differ on that axis: [Presidio](https://github.com/microsoft/presidio) needs separate key management for reversibility, and [philter](https://github.com/BCHSI/philter-ucsf) is one-way by design. `pseudonymize-text` makes deterministic, key-reversible HMAC-SHA256 tokens the default — with an audit-first detect/apply CLI and a stdlib-first dependency surface. See [docs/landscape/de-identification.md](docs/landscape/de-identification.md) for an honest comparison and when to pick something else.
 
-## Related projects
+## Refs
 
-If `pseudonymize-text` is the wrong fit, see [docs/landscape/de-identification.md](docs/landscape/de-identification.md) for an honest comparison against [Presidio](https://github.com/microsoft/presidio) (broader detection, separate key management for reversibility) and [philter](https://github.com/BCHSI/philter-ucsf) (HIPAA Safe Harbor for clinical notes; not reversible).
+- [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) — modules, data flow, stack
+- [docs/USAGE.md](docs/USAGE.md) — CLI reference: subcommands, flags, exit codes
+- [docs/TERMS_CSV.md](docs/TERMS_CSV.md) — term-list input schema
+- [docs/COMPLIANCE.md](docs/COMPLIANCE.md) — GDPR / ENISA / EDPB / NIST posture
+- [docs/SECURITY.md](docs/SECURITY.md) — threat model, key & mapping handling
+- [docs/HASHING.md](docs/HASHING.md) — token construction, canonicalization, stability
+- [docs/GLOSSARY.md](docs/GLOSSARY.md) — abbreviations, PII vs PHI
+- [docs/USER_STORIES.md](docs/USER_STORIES.md) — user stories by support level
+- [docs/roadmap.md](docs/roadmap.md) — roadmap and deferred features
+- [docs/landscape/de-identification.md](docs/landscape/de-identification.md) — alternatives and when to pick them
+- [docs/decisions/](docs/decisions/) — architectural decisions ([MADR](https://adr.github.io/madr/) format)
+- [CONTRIBUTING.md](CONTRIBUTING.md) — contributor workflow, commands, releasing
+- [CHANGELOG.md](CHANGELOG.md) — version history (Keep a Changelog)
 
 ## License
 
