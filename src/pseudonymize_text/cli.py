@@ -17,6 +17,7 @@ from pydantic import ValidationError
 
 from . import __version__, formats
 from ._schemas import MappingRecord, ReportHeader, ReportRecord
+from .detectors.phi import detect_dea, detect_npi, detect_vin
 from .detectors.structured import (
     detect_credit_cards,
     detect_emails,
@@ -58,11 +59,11 @@ def _build_parser() -> argparse.ArgumentParser:
     common.add_argument(
         "--detectors",
         default="literal,structured",
-        help="comma list: literal, structured, ner",
+        help="comma list: literal, structured, phi, ner",
     )
     common.add_argument(
         "--types",
-        default="name,email,phone,iban,cc,ssn,org,loc",
+        default="name,email,phone,iban,cc,ssn,org,loc,npi,dea,vin",
         help="comma list of entity types to keep",
     )
     common.add_argument("--ner", action="store_true", help="enable NER (requires [ner] extra)")
@@ -281,6 +282,12 @@ _STRUCTURED_DISPATCH = {
     "ssn": detect_ssns,
 }
 
+_PHI_DISPATCH = {
+    "npi": detect_npi,
+    "dea": detect_dea,
+    "vin": detect_vin,
+}
+
 
 def _detect_spans_for_text(
     text: str,
@@ -293,6 +300,10 @@ def _detect_spans_for_text(
         spans.extend(detect_terms(text, terms))
     if "structured" in enabled_detectors:
         for type_, fn in _STRUCTURED_DISPATCH.items():
+            if type_ in enabled_types:
+                spans.extend(fn(text))
+    if "phi" in enabled_detectors:
+        for type_, fn in _PHI_DISPATCH.items():
             if type_ in enabled_types:
                 spans.extend(fn(text))
     if "ner" in enabled_detectors:

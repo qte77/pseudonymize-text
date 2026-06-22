@@ -440,3 +440,29 @@ def test_cli_broad_pattern_allowed_with_flag(
          "--allow-broad-patterns", "--report", str(tmp_path / "r.jsonl")]
     )
     assert rc == 0
+
+
+def test_cli_detectors_phi_finds_npi_and_off_by_default(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    import json as _json
+
+    in_dir = tmp_path / "in"
+    in_dir.mkdir()
+    # The email guarantees the default run still emits a report to assert against.
+    (in_dir / "a.txt").write_text("Mail a@b.com NPI 1234567893.", encoding="utf-8")
+    monkeypatch.setenv("PSEUDONYMIZE_KEY", "ab" * 32)
+
+    # Off by default: the default detector set (literal, structured) yields no NPI.
+    default_report = tmp_path / "default.jsonl"
+    assert main(["detect", str(in_dir), "--no-terms", "--report", str(default_report)]) == 0
+    default_records = [_json.loads(x) for x in default_report.read_text().splitlines()[1:]]
+    assert not any(r["type"] == "npi" for r in default_records)
+
+    # Enabled with --detectors phi.
+    phi_report = tmp_path / "phi.jsonl"
+    assert main(
+        ["detect", str(in_dir), "--no-terms", "--detectors", "phi", "--report", str(phi_report)]
+    ) == 0
+    phi_records = [_json.loads(x) for x in phi_report.read_text().splitlines()[1:]]
+    assert any(r["type"] == "npi" and r["text"] == "1234567893" for r in phi_records)
