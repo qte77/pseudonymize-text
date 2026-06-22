@@ -138,4 +138,6 @@ pseudonymize apply runs/mail-in runs/mail-out \
   --terms runs/terms.csv --plan runs/plan.jsonl --ignore runs/false-positives.txt
 ```
 
+Mail parts are **re-detected at `apply` time even under `--plan`** — the plan keys spans by file, which cannot be replayed across a message's MIME parts — so keep `--terms` on the `apply` command for mail corpora (text files still replay from the plan). Detection is deterministic, so the result matches the audited plan. Tokens placed in address headers (`From` / `To` / …) are emitted RFC 2047-encoded and decode back to `<TYPE:hex>`.
+
 For unsupported PHI categories in clinical mail, see [landscape/de-identification.md](landscape/de-identification.md). The part-fate table lives in [ARCHITECTURE.md § Mail-format support](ARCHITECTURE.md#mail-format-support).
