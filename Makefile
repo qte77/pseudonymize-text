@@ -14,7 +14,7 @@ help:
 	@echo '  changelog_new      Add a changelog fragment under changelog.d/'
 	@echo '  changelog_preview  Preview the assembled release entry (no consume)'
 	@echo '  changelog_release  Collect fragments into CHANGELOG.md (VERSION=X.Y.Z)'
-	@echo '  clean              Remove build and cache artifacts'
+	@echo '  clean              Remove build, cache, and runs/ sandbox artefacts'
 
 setup:
 	uv sync --all-extras
@@ -48,5 +48,5 @@ changelog_release:
 	uv run scriv collect --version $(VERSION)
 
 clean:
-	rm -rf build dist *.egg-info .pytest_cache .ruff_cache htmlcov .coverage
+	rm -rf build dist *.egg-info .pytest_cache .ruff_cache htmlcov .coverage runs
 	find . -type d -name __pycache__ -prune -exec rm -rf {} +
