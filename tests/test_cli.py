@@ -573,3 +573,57 @@ def test_cli_apply_plan_mail_with_terms_does_not_warn(
     )
     assert rc == 0
     assert "literal entities" not in capsys.readouterr().err
+
+
+def test_cli_detect_prints_non_pii_summary_to_stderr(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """D1: detect prints a one-line span/file/type summary to stderr on
+    success, carrying counts only — never plaintext span text."""
+    in_dir = tmp_path / "in"
+    in_dir.mkdir()
+    (in_dir / "a.txt").write_text(
+        "Mail alice@acme.com and bob@acme.com", encoding="utf-8"
+    )
+    monkeypatch.setenv("PSEUDONYMIZE_KEY", "ab" * 32)
+
+    rc = main(
+        ["detect", str(in_dir), "--no-terms", "--report", str(tmp_path / "r.jsonl")]
+    )
+    assert rc == 0
+    err = capsys.readouterr().err
+    assert "2 spans" in err
+    assert "across 1 file" in err
+    assert "email:2" in err
+    # Counts only — the surface plaintext must never reach stderr.
+    assert "alice@acme.com" not in err
+    assert "bob@acme.com" not in err
+
+
+def test_cli_apply_prints_non_pii_summary_to_stderr(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """D1: apply prints the same non-PII summary on success."""
+    in_dir = tmp_path / "in"
+    in_dir.mkdir()
+    (in_dir / "a.txt").write_text("Contact alice@acme.com soon", encoding="utf-8")
+    monkeypatch.setenv("PSEUDONYMIZE_KEY", "ab" * 32)
+
+    rc = main(
+        [
+            "apply", str(in_dir), str(tmp_path / "out"),
+            "--no-terms",
+            "--mapping", str(tmp_path / "m.json"),
+            "--report", str(tmp_path / "r.jsonl"),
+        ]
+    )
+    assert rc == 0
+    err = capsys.readouterr().err
+    assert "1 span" in err
+    assert "across 1 file" in err
+    assert "email:1" in err
+    assert "alice@acme.com" not in err
