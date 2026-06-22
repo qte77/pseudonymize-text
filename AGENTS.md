@@ -37,13 +37,9 @@ Read in this order; do not duplicate their content into new files.
 
 ## Commands
 
-Use `make` recipes; deviations need a reason.
-
-- `make setup` — install runtime + dev + ner deps via uv
-- `make test` — run pytest
-- `make lint` — ruff check + markdownlint
-- `make check` — lint + test (run before any commit)
-- `make check_links` — lychee against README + docs/
+Use `make` recipes; deviations need a reason. Full list:
+[CONTRIBUTING.md § Commands](CONTRIBUTING.md#commands). Run `make check`
+(lint + test) before any commit.
 
 ## Escalation
 
