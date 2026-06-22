@@ -12,7 +12,7 @@
 | Type | Identifier | Validation |
 |---|---|---|
 | `npi` | National Provider Identifier (10 digits) | Luhn over the `80840` prefix (CMS check-digit spec) |
-| `dea` | DEA registration number (2 letters + 7 digits) | registrant checksum (final digit) |
+| `dea` | DEA registration number — the US **medical controlled-substance prescriber** ID (2 letters + 7 digits), *not* the Drug Enforcement Administration agency | registrant checksum (final digit) |
 | `vin` | Vehicle Identification Number (17 chars) | ISO 3779 mod-11 check digit (position 9) |
 
 Each is checksum-validated to keep false positives low, emits `<NPI:…>` / `<DEA:…>` / `<VIN:…>`

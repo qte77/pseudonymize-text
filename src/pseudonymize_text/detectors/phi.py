@@ -16,7 +16,8 @@ from ..replacer import Span
 # NPI: 10 digits, Luhn-valid over the "80840" prefix + the 9-digit identifier
 # (the 10th digit is the Luhn check). See CMS NPI check-digit spec.
 _NPI_RE = re.compile(r"\b\d{10}\b")
-# DEA: 2 letters (registrant type + last-name initial) + 7 digits.
+# DEA registration number — the US medical controlled-substance prescriber ID
+# (not the DEA agency): 2 letters (registrant type + last-name initial) + 7 digits.
 _DEA_RE = re.compile(r"\b[A-Za-z]{2}\d{7}\b")
 # VIN: 17 chars from the VIN alphabet (I, O, Q excluded).
 _VIN_RE = re.compile(r"\b[A-HJ-NPR-Z0-9]{17}\b")
@@ -45,7 +46,11 @@ def _dea_checksum_ok(value: str) -> bool:
 
 
 def detect_dea(text: str) -> Iterator[Span]:
-    """Yield a ``Span`` for every checksum-valid DEA number."""
+    """Yield a ``Span`` per checksum-valid DEA registration number.
+
+    The DEA *number* is the US medical controlled-substance prescriber ID
+    (not the Drug Enforcement Administration agency).
+    """
     for m in _DEA_RE.finditer(text):
         if _dea_checksum_ok(m.group(0)):
             yield Span(
