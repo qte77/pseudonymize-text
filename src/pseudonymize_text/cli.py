@@ -415,6 +415,26 @@ def _record_source(
     return EXIT_OK
 
 
+def _emit_run_summary(
+    action: str, type_counts: dict[str, int], file_count: int
+) -> None:
+    """Print a one-line non-PII run summary to stderr (D1).
+
+    Carries counts only — span counts by type and the number of affected
+    files — never plaintext span text, context, or tokens.
+    """
+    total = sum(type_counts.values())
+    spans_word = "span" if total == 1 else "spans"
+    files_word = "file" if file_count == 1 else "files"
+    by_type = " ".join(f"{t}:{type_counts[t]}" for t in sorted(type_counts))
+    suffix = f" — {by_type}" if by_type else ""
+    print(
+        f"pseudonymize {action}: {total} {spans_word} across "
+        f"{file_count} {files_word}{suffix}",
+        file=sys.stderr,
+    )
+
+
 def _run_detect(args: argparse.Namespace, key: bytes, terms: list) -> int:
     """Walk in_dir, detect spans, write a JSONL report. Returns exit code."""
     in_dir = args.in_dir.resolve()
@@ -432,6 +452,8 @@ def _run_detect(args: argparse.Namespace, key: bytes, terms: list) -> int:
     # header-only report that `apply --plan` reads as an empty plan (A1).
     writer.write_header()
     max_bytes = _max_file_bytes()
+    type_counts: dict[str, int] = {}
+    files_with_spans: set[str] = set()
 
     def record(text: str, rel: Path) -> str:
         """Write a report record per detected span; return ``text`` unchanged.
@@ -444,6 +466,8 @@ def _run_detect(args: argparse.Namespace, key: bytes, terms: list) -> int:
         for span in _detect_spans_for_text(
             text, terms, args.enabled_detectors, args.enabled_types
         ):
+            type_counts[span.type] = type_counts.get(span.type, 0) + 1
+            files_with_spans.add(rel_posix)
             line, col = _line_col(text, span.start)
             writer.write(
                 ReportRecord(
@@ -467,6 +491,7 @@ def _run_detect(args: argparse.Namespace, key: bytes, terms: list) -> int:
         rc = _record_source(src, in_dir, record, max_bytes)
         if rc != EXIT_OK:
             return rc
+    _emit_run_summary("detect", type_counts, len(files_with_spans))
     return EXIT_OK
 
 
@@ -499,6 +524,8 @@ def _run_apply(args: argparse.Namespace, key: bytes, terms: list) -> int:
     mapping: dict[str, MappingRecord] = {}
     now = datetime.now(tz=UTC)
     warned_mail_no_terms = False
+    type_counts: dict[str, int] = {}
+    files_with_spans: set[str] = set()
 
     def transform(text: str, rel: Path) -> str:
         nonlocal warned_mail_no_terms
@@ -532,6 +559,8 @@ def _run_apply(args: argparse.Namespace, key: bytes, terms: list) -> int:
             )
         tokens = {span: _token_for(span, key) for span in spans}
         for span, token in tokens.items():
+            type_counts[span.type] = type_counts.get(span.type, 0) + 1
+            files_with_spans.add(rel.as_posix())
             upsert(
                 mapping,
                 token,
@@ -568,6 +597,7 @@ def _run_apply(args: argparse.Namespace, key: bytes, terms: list) -> int:
 
     walk_and_process(in_dir, out_dir, transform)
     save_mapping(args.mapping, mapping)
+    _emit_run_summary("apply", type_counts, len(files_with_spans))
     return EXIT_OK
 
 
