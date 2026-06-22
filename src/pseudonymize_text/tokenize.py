@@ -19,9 +19,9 @@ def canonicalize(value: str, type_: str) -> str:
         return f"+{parsed.country_code}{parsed.national_number}"
     if type_ == "iban":
         return re.sub(r"\s+", "", value).upper()
-    if type_ in ("cc", "ssn", "npi", "mrn"):
+    if type_ in ("cc", "ssn", "npi", "mrn", "de_steuer", "fr_nir", "gb_nhs"):
         return re.sub(r"\D", "", value)
-    if type_ in ("dea", "vin"):
+    if type_ in ("dea", "vin", "es_dni", "it_cf"):
         return re.sub(r"\s+", "", value).upper()
     raise ValueError(f"unknown type: {type_}")
 

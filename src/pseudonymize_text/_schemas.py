@@ -41,9 +41,11 @@ class ReportRecord(BaseModel):
     start: int = Field(ge=0)
     end: int = Field(ge=0)
     text: str
-    detector: str = Field(pattern=r"^(literal|pattern|structured:[a-z]+|phi:[a-z]+|ner:[A-Z]+)$")
+    detector: str = Field(
+        pattern=r"^(literal|pattern|structured:[a-z]+|phi:[a-z]+|eu:[a-z_]+|ner:[A-Z]+)$"
+    )
     type: str
     id: str | None
-    token: str = Field(pattern=r"^<[A-Z]+:[0-9a-f]{32}>$")
+    token: str = Field(pattern=r"^<[A-Z_]+:[0-9a-f]{32}>$")
     confidence: float | None = None
     context: str

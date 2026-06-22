@@ -28,8 +28,8 @@ If neither key source is set, exit code `3`. If `--terms` cannot be read or pars
 |---|---|---|
 | `--terms FILE` | (required unless `--no-terms`) | Term list (CSV or JSON). Empty file allowed. |
 | `--no-terms` | off | Run without a term list (structured/NER only). Mutually exclusive with `--terms`. |
-| `--detectors LIST` | `literal,structured` | Comma list from `literal`, `structured`, `phi`, `ner`. `phi` adds checksum-validated NPI/DEA/VIN — see [PHI.md](PHI.md). |
-| `--types LIST` | `name,email,phone,iban,cc,ssn,org,loc,npi,dea,vin` | **Filter** on entity types — does not enable detectors. Types not produced by enabled detectors are simply unused. |
+| `--detectors LIST` | `literal,structured` | Comma list from `literal`, `structured`, `phi`, `eu`, `ner`. `phi` adds checksum-validated NPI/DEA/VIN ([PHI.md](PHI.md)); `eu` adds checksum-validated EU national IDs (DE/FR/GB/ES/IT). |
+| `--types LIST` | `name,email,phone,iban,cc,ssn,org,loc,npi,dea,vin,de_steuer,fr_nir,gb_nhs,es_dni,it_cf` | **Filter** on entity types — does not enable detectors. Types not produced by enabled detectors are simply unused. |
 | `--key-file PATH` | — | Read HMAC key from this file (overrides env var). |
 | `--report PATH` | `./runs/pseudonymize-report.jsonl` | Where to write the audit report. Parent directory is auto-created. Always written — a zero-span run still emits the header line, so `apply --plan` on an empty report is a valid no-op (not exit `4`). Must **not** reside inside `<out_dir>`; exit `7` otherwise (same rule as `--mapping`, since the report holds plaintext spans). |
 | `--report-format FMT` | `jsonl` | `jsonl` or `tsv`. |
