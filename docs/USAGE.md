@@ -35,6 +35,7 @@ If neither key source is set, exit code `3`. If `--terms` cannot be read or pars
 | `--report-format FMT` | `jsonl` | `jsonl` or `tsv`. |
 | `--ignore FILE` | — | Suppression list (one literal per line, `#` comments). Matches a span's surface `text` field; comparison is NFKC + casefold. |
 | `--ner` | off | Enable NER detector (requires `[ner]` extra). |
+| `--allow-broad-patterns` | off | Allow broad term patterns (`*`, `?`, `*@*`, `**`) that the loader rejects by default (exit `4`). |
 
 ### `apply` only
 
@@ -106,7 +107,7 @@ After `apply`, three artifacts exist:
 pseudonymize detect runs/in \
   --terms runs/terms.csv \
   --detectors ner \
-  --ner --ner-confidence 0.9 \
+  --ner \
   --report runs/discovery.jsonl
 ```
 
