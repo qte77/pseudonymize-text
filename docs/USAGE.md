@@ -35,6 +35,7 @@ If neither key source is set, exit code `3`. If `--terms` cannot be read or pars
 | `--report-format FMT` | `jsonl` | `jsonl` or `tsv`. |
 | `--ignore FILE` | — | Suppression list (one literal per line, `#` comments). Matches a span's surface `text` field; comparison is NFKC + casefold. |
 | `--ner` | off | Enable NER detector (requires `[ner]` extra). |
+| `--phi-context` | off | With `--detectors phi`, also detect context-cued **MRNs** (no checksum, so higher false-positive — review the report). Auto-enables the `mrn` type. See [PHI.md](PHI.md). |
 | `--allow-broad-patterns` | off | Allow broad term patterns (`*`, `?`, `*@*`, `**`) that the loader rejects by default (exit `4`). |
 
 Detector coverage by jurisdiction (international / US / EU-planned) is tracked as the single source of truth in [ADR_003 § Detector coverage](decisions/ADR_003.md#detector-coverage-by-jurisdiction-source-of-truth).
