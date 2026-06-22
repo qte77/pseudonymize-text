@@ -18,7 +18,7 @@
 - **Lightweight** — Python stdlib + two small deps (`python-stdnum`, `phonenumberslite`). Optional spaCy NER via `[ner]` extra.
 - **Audit-first** — `detect` produces a JSONL plan; `apply` executes it byte-identically.
 
-> **What this isn't** — not anonymization (output is still personal data). PHI support is limited: checksum-validated NPI/DEA/VIN are opt-in (`--detectors phi`, see [docs/PHI.md](docs/PHI.md)), but MRN, device IDs, image OCR, and binary mail attachments are out of scope. See [docs/USER_STORIES.md](docs/USER_STORIES.md) for coverage by support level and [docs/COMPLIANCE.md § What we do not claim](docs/COMPLIANCE.md#what-we-do-not-claim) for the formal non-claims.
+> **What this isn't** — not anonymization (output is still personal data). Detectors are jurisdiction-tagged ([ADR_003 coverage table](docs/decisions/ADR_003.md#detector-coverage-by-jurisdiction-source-of-truth)): international + US default, with opt-in US PHI (NPI/DEA/VIN, plus context-cued MRN via `--phi-context`; see [docs/PHI.md](docs/PHI.md)) and EU national IDs (`--detectors eu`). Device IDs, image OCR, and binary mail attachments stay out of scope. See [docs/USER_STORIES.md](docs/USER_STORIES.md) for coverage by support level and [docs/COMPLIANCE.md § What we do not claim](docs/COMPLIANCE.md#what-we-do-not-claim) for the formal non-claims.
 
 ## How
 
