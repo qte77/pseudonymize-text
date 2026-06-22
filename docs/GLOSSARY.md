@@ -54,7 +54,7 @@ Background reading: <https://www.hipaajournal.com/phi-vs-pii/> · <https://gdprl
 | **NER** | Named Entity Recognition | spaCy-based detection of PERSON/ORG/LOC; optional via `[ner]` extra. | [ner-install.md](ner-install.md) |
 | **NFKC** | Normalization Form Compatibility Composition | Unicode normalization applied to `--ignore` entries to prevent zero-width-character bypass. | [SECURITY.md](SECURITY.md) |
 | **NIST** | National Institute of Standards and Technology | US standards body; SP 800-188 (de-identification), SP 800-107 (hash truncation), FIPS 180-4 (SHA-256). | [COMPLIANCE.md](COMPLIANCE.md) |
-| **NPI** | National Provider Identifier | US healthcare-provider ID; PHI-only, **not detected**. | [PII vs PHI](#pii-vs-phi) |
+| **NPI** | National Provider Identifier | US healthcare-provider ID; detected opt-in via `--detectors phi`. | [PHI.md](PHI.md) |
 | **PBKDF2** | Password-Based Key Derivation Function 2 | Password-stretching KDF (RFC 8018); deliberately **not** used (our input is a key, not a password). | [SECURITY.md](SECURITY.md) |
 | **PHI** | Protected Health Information | See [PII vs PHI](#pii-vs-phi). | [PII vs PHI](#pii-vs-phi) |
 | **PII** | Personally Identifiable Information | See [PII vs PHI](#pii-vs-phi). | [PII vs PHI](#pii-vs-phi) |
