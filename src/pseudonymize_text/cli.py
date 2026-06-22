@@ -17,6 +17,13 @@ from pydantic import ValidationError
 
 from . import __version__, formats
 from ._schemas import MappingRecord, ReportHeader, ReportRecord
+from .detectors.eu_ids import (
+    detect_de_steuer,
+    detect_es_dni,
+    detect_fr_nir,
+    detect_gb_nhs,
+    detect_it_cf,
+)
 from .detectors.phi import detect_dea, detect_mrn, detect_npi, detect_vin
 from .detectors.structured import (
     detect_credit_cards,
@@ -59,11 +66,14 @@ def _build_parser() -> argparse.ArgumentParser:
     common.add_argument(
         "--detectors",
         default="literal,structured",
-        help="comma list: literal, structured, phi, ner",
+        help="comma list: literal, structured, phi, eu, ner",
     )
     common.add_argument(
         "--types",
-        default="name,email,phone,iban,cc,ssn,org,loc,npi,dea,vin",
+        default=(
+            "name,email,phone,iban,cc,ssn,org,loc,npi,dea,vin,"
+            "de_steuer,fr_nir,gb_nhs,es_dni,it_cf"
+        ),
         help="comma list of entity types to keep",
     )
     common.add_argument("--ner", action="store_true", help="enable NER (requires [ner] extra)")
@@ -299,6 +309,27 @@ _PHI_DISPATCH = {
     "vin": detect_vin,
 }
 
+_EU_DISPATCH = {
+    "de_steuer": detect_de_steuer,
+    "fr_nir": detect_fr_nir,
+    "gb_nhs": detect_gb_nhs,
+    "es_dni": detect_es_dni,
+    "it_cf": detect_it_cf,
+}
+
+
+def _dispatch_spans(
+    dispatch: dict[str, Callable[[str], object]],
+    text: str,
+    enabled_types: set[str],
+) -> list[Span]:
+    """Run each detector in ``dispatch`` whose type is enabled; collect spans."""
+    spans: list[Span] = []
+    for type_, fn in dispatch.items():
+        if type_ in enabled_types:
+            spans.extend(fn(text))
+    return spans
+
 
 def _detect_spans_for_text(
     text: str,
@@ -310,15 +341,13 @@ def _detect_spans_for_text(
     if "literal" in enabled_detectors:
         spans.extend(detect_terms(text, terms))
     if "structured" in enabled_detectors:
-        for type_, fn in _STRUCTURED_DISPATCH.items():
-            if type_ in enabled_types:
-                spans.extend(fn(text))
+        spans.extend(_dispatch_spans(_STRUCTURED_DISPATCH, text, enabled_types))
     if "phi" in enabled_detectors:
-        for type_, fn in _PHI_DISPATCH.items():
-            if type_ in enabled_types:
-                spans.extend(fn(text))
+        spans.extend(_dispatch_spans(_PHI_DISPATCH, text, enabled_types))
         if "phi_context" in enabled_detectors and "mrn" in enabled_types:
             spans.extend(detect_mrn(text))
+    if "eu" in enabled_detectors:
+        spans.extend(_dispatch_spans(_EU_DISPATCH, text, enabled_types))
     if "ner" in enabled_detectors:
         from .detectors.ner import detect_ner  # lazy import
 
