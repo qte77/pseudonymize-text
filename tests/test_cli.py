@@ -466,3 +466,33 @@ def test_cli_detectors_phi_finds_npi_and_off_by_default(
     ) == 0
     phi_records = [_json.loads(x) for x in phi_report.read_text().splitlines()[1:]]
     assert any(r["type"] == "npi" and r["text"] == "1234567893" for r in phi_records)
+
+
+def test_cli_detect_zero_spans_emits_header_and_apply_plan_succeeds(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A1: detect with no spans still writes the report header, so a later
+    apply --plan reads a valid empty plan (exit 0) rather than failing exit 4."""
+    in_dir = tmp_path / "in"
+    in_dir.mkdir()
+    (in_dir / "a.txt").write_text("the quick brown fox", encoding="utf-8")
+    report = tmp_path / "report.jsonl"
+    monkeypatch.setenv("PSEUDONYMIZE_KEY", "ab" * 32)
+
+    assert main(["detect", str(in_dir), "--no-terms", "--report", str(report)]) == 0
+    lines = report.read_text(encoding="utf-8").splitlines()
+    assert len(lines) == 1, "header-only report expected when zero spans found"
+    assert "pseudonymize.report/1" in lines[0]
+
+    out_dir = tmp_path / "out"
+    rc = main(
+        [
+            "apply", str(in_dir), str(out_dir),
+            "--no-terms",
+            "--plan", str(report),
+            "--mapping", str(tmp_path / "mapping.json"),
+            "--report", str(tmp_path / "apply-report.jsonl"),
+        ]
+    )
+    assert rc == 0
+    assert (out_dir / "a.txt").read_text(encoding="utf-8") == "the quick brown fox"
