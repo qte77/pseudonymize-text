@@ -13,30 +13,50 @@ from collections.abc import Callable
 from email import policy
 from email.message import EmailMessage, Message
 from email.parser import BytesParser
+from email.utils import formataddr, getaddresses
 from pathlib import Path
 
 _PSEUDO_HEADERS: frozenset[str] = frozenset(
     {"From", "To", "Cc", "Bcc", "Subject", "Reply-To"}
 )
+# Address headers must be rebuilt via getaddresses/formataddr: assigning a
+# token like ``<NAME:hex>`` straight back under policy.default makes the RFC
+# 5322 address parser treat the token's ``<`` as an angle-addr delimiter and
+# mangle it (``<NAME>:hex>``). Subject is unstructured, so whole-value applies.
+_ADDRESS_HEADERS: frozenset[str] = frozenset({"From", "To", "Cc", "Bcc", "Reply-To"})
 _STRIP_HEADERS: frozenset[str] = frozenset(
     {"DKIM-Signature", "ARC-Seal", "ARC-Message-Signature", "ARC-Authentication-Results"}
 )
 _TEXT_TYPES: frozenset[str] = frozenset({"text/plain", "text/html"})
 
 
-def process_eml(
-    src: Path, dst: Path, transform: Callable[[str, Path], str]
-) -> None:
-    """Read ``src`` as RFC 5322, rewrite per ADR_002, atomically write ``dst``."""
-    rel = Path(src.name)
+def _read_eml(src: Path) -> EmailMessage:
+    """Parse ``src`` as an RFC 5322 message under ``policy.default``."""
     parser = BytesParser(policy=policy.default)
     with src.open("rb") as fh:
         msg = parser.parse(fh)
     if not isinstance(msg, EmailMessage):  # pragma: no cover - policy.default
         raise TypeError(f"expected EmailMessage, got {type(msg)!r}")
+    return msg
 
-    transform_message(msg, transform, rel)
+
+def process_eml(
+    src: Path, dst: Path, transform: Callable[[str, Path], str]
+) -> None:
+    """Read ``src`` as RFC 5322, rewrite per ADR_002, atomically write ``dst``."""
+    msg = _read_eml(src)
+    transform_message(msg, transform, Path(src.name))
     dst.write_bytes(bytes(msg))
+
+
+def scan_eml(src: Path, transform: Callable[[str, Path], str]) -> None:
+    """Detection-only: parse ``src`` and run ``transform`` per part; write nothing.
+
+    Lets ``detect`` surface the same mail spans ``apply`` would substitute, so the
+    audit plan is not silently empty for ``.eml`` inputs (the transform records
+    spans and returns its text unchanged).
+    """
+    transform_message(_read_eml(src), transform, Path(src.name))
 
 
 def transform_message(
@@ -70,9 +90,37 @@ def _pseudonymise_headers(
         value = msg.get(header)
         if value is None:
             continue
-        new = transform(str(value), rel)
+        if header in _ADDRESS_HEADERS:
+            new = _pseudonymise_addresses(str(value), transform, rel)
+        else:
+            new = transform(str(value), rel)
         del msg[header]
         msg[header] = new
+
+
+def _pseudonymise_addresses(
+    value: str, transform: Callable[[str, Path], str], rel: Path
+) -> str:
+    """Pseudonymise an address header without the RFC 5322 parser mangling tokens.
+
+    Each address is split into ``(display-name, addr-spec)``; both are run
+    through ``transform`` and recombined as a single quoted display name with no
+    addr-spec, so the resulting ``<TYPE:hex>`` tokens survive re-serialization
+    verbatim and the header still re-parses.
+    """
+    out: list[str] = []
+    for display, addr in getaddresses([value]):
+        tokens = [
+            t
+            for t in (
+                transform(display, rel) if display else "",
+                transform(addr, rel) if addr else "",
+            )
+            if t
+        ]
+        if tokens:
+            out.append(formataddr((" ".join(tokens), "")))
+    return ", ".join(out)
 
 
 def _rewrite_part(

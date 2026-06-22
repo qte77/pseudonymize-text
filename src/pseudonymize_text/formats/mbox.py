@@ -10,7 +10,7 @@ re-assemble an mbox on the way out — the fan-out replaces it.
 """
 
 import mailbox
-from collections.abc import Callable
+from collections.abc import Callable, Iterator
 from email.message import EmailMessage
 from pathlib import Path
 
@@ -23,14 +23,29 @@ def process_mbox(
     """Fan ``src`` out into ``dst.with_suffix("")/<seq>.eml`` per ADR_002."""
     out_dir = dst.with_suffix("")
     out_dir.mkdir(parents=True, exist_ok=True)
+    for rel, msg in _iter_messages(src):
+        transform_message(msg, transform, rel)
+        (out_dir / rel.name).write_bytes(bytes(msg))
+
+
+def scan_mbox(src: Path, transform: Callable[[str, Path], str]) -> None:
+    """Detection-only counterpart to ``process_mbox``.
+
+    Runs ``transform`` per message without writing, so ``detect`` surfaces
+    ``.mbox`` spans too.
+    """
+    for rel, msg in _iter_messages(src):
+        transform_message(msg, transform, rel)
+
+
+def _iter_messages(src: Path) -> Iterator[tuple[Path, EmailMessage]]:
+    """Yield ``(<seq>.eml path, EmailMessage)`` for each message in ``src``."""
     box = mailbox.mbox(str(src), create=False)
     try:
         for i, msg in enumerate(box):
             if not isinstance(msg, EmailMessage):
                 msg = _to_email_message(msg)
-            rel = Path(f"{i:04d}.eml")
-            transform_message(msg, transform, rel)
-            (out_dir / rel.name).write_bytes(bytes(msg))
+            yield Path(f"{i:04d}.eml"), msg
     finally:
         box.close()
 

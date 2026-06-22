@@ -9,12 +9,13 @@ import hmac
 import os
 import sys
 import unicodedata
+from collections.abc import Callable
 from datetime import UTC, datetime
 from pathlib import Path
 
 from pydantic import ValidationError
 
-from . import __version__
+from . import __version__, formats
 from ._schemas import MappingRecord, ReportHeader, ReportRecord
 from .detectors.structured import (
     detect_credit_cards,
@@ -355,6 +356,49 @@ def _make_report_writer(
     return ReportWriter(args.report, header)
 
 
+def _record_source(
+    src: Path,
+    in_dir: Path,
+    record: Callable[[str, Path], str],
+    max_bytes: int,
+) -> int:
+    """Run the detection ``record`` callback over one source file.
+
+    Whitelisted text files are read as UTF-8; ``.eml``/``.mbox`` route through
+    ``formats`` (same per-part pass ``apply`` uses) so the audit plan covers
+    mail. Returns ``EXIT_IO`` if the file exceeds the size cap, else ``EXIT_OK``
+    (non-target / unreadable files are skipped).
+    """
+    if not src.is_file():
+        return EXIT_OK
+    is_text = src.suffix in WHITELISTED_EXTENSIONS
+    is_mail = formats.is_mail_format(src.suffix)
+    if not (is_text or is_mail):
+        return EXIT_OK
+    try:
+        size = src.stat().st_size
+    except OSError:
+        return EXIT_OK
+    if size > max_bytes:
+        print(
+            f"error: {src} is {size} bytes; exceeds "
+            f"PSEUDONYMIZE_MAX_FILE_BYTES={max_bytes}",
+            file=sys.stderr,
+        )
+        return EXIT_IO
+    rel = src.relative_to(in_dir)
+    try:
+        if is_text:
+            record(src.read_text(encoding="utf-8"), rel)
+        elif src.suffix == ".mbox":
+            formats.scan_mbox(src, record)
+        else:
+            formats.scan_eml(src, record)
+    except (OSError, UnicodeDecodeError):
+        return EXIT_OK
+    return EXIT_OK
+
+
 def _run_detect(args: argparse.Namespace, key: bytes, terms: list) -> int:
     """Walk in_dir, detect spans, write a JSONL report. Returns exit code."""
     in_dir = args.in_dir.resolve()
@@ -370,32 +414,21 @@ def _run_detect(args: argparse.Namespace, key: bytes, terms: list) -> int:
     writer = _make_report_writer(args, header)
     max_bytes = _max_file_bytes()
 
-    for src in sorted(in_dir.rglob("*")):
-        if not src.is_file() or src.suffix not in WHITELISTED_EXTENSIONS:
-            continue
-        try:
-            size = src.stat().st_size
-        except OSError:
-            continue
-        if size > max_bytes:
-            print(
-                f"error: {src} is {size} bytes; exceeds "
-                f"PSEUDONYMIZE_MAX_FILE_BYTES={max_bytes}",
-                file=sys.stderr,
-            )
-            return EXIT_IO
-        rel = src.relative_to(in_dir).as_posix()
-        try:
-            text = src.read_text(encoding="utf-8")
-        except (OSError, UnicodeDecodeError):
-            continue
+    def record(text: str, rel: Path) -> str:
+        """Write a report record per detected span; return ``text`` unchanged.
+
+        Shaped as a ``transform`` callback so the same span-detection pass that
+        ``apply`` runs through ``formats`` can drive ``detect`` for mail, keeping
+        the audit plan in parity with what ``apply`` would substitute.
+        """
+        rel_posix = rel.as_posix()
         for span in _detect_spans_for_text(
             text, terms, args.enabled_detectors, args.enabled_types
         ):
             line, col = _line_col(text, span.start)
             writer.write(
                 ReportRecord(
-                    file=rel,
+                    file=rel_posix,
                     line=line,
                     col=col,
                     start=span.start,
@@ -409,6 +442,12 @@ def _run_detect(args: argparse.Namespace, key: bytes, terms: list) -> int:
                     context=_context(text, span.start, span.end),
                 )
             )
+        return text
+
+    for src in sorted(in_dir.rglob("*")):
+        rc = _record_source(src, in_dir, record, max_bytes)
+        if rc != EXIT_OK:
+            return rc
     return EXIT_OK
 
 
@@ -439,7 +478,10 @@ def _run_apply(args: argparse.Namespace, key: bytes, terms: list) -> int:
     now = datetime.now(tz=UTC)
 
     def transform(text: str, rel: Path) -> str:
-        if args.plan is not None:
+        # Mail is re-detected even under --plan: the plan keys spans by file with
+        # part-local offsets that cannot be replayed across a message's parts.
+        # Detectors are deterministic, so the result still matches the audit plan.
+        if args.plan is not None and not formats.is_mail_format(rel.suffix):
             spans = plan_spans.get(rel.as_posix(), [])
         else:
             spans = _detect_spans_for_text(

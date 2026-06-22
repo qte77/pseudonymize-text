@@ -6,10 +6,16 @@ Public surface:
     process_mbox(src, dst, transform) -> None  # fans out to dst/<seq>.eml
 """
 
-from .eml import process_eml
-from .mbox import process_mbox
+from .eml import process_eml, scan_eml
+from .mbox import process_mbox, scan_mbox
 
-__all__ = ["is_mail_format", "process_eml", "process_mbox"]
+__all__ = [
+    "is_mail_format",
+    "process_eml",
+    "process_mbox",
+    "scan_eml",
+    "scan_mbox",
+]
 
 _MAIL_SUFFIXES: frozenset[str] = frozenset({".eml", ".mbox"})
 
