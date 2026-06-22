@@ -14,7 +14,7 @@ Construction, input canonicalization, namespacing, and stability of the hash-der
 token = "<" + TYPE + ":" + hex(HMAC-SHA256(K, M)[:16]) + ">"
 
 where:
-  TYPE ∈ {NAME, EMAIL, PHONE, IBAN, CC, SSN, ORG, LOC}
+  TYPE ∈ {NAME, EMAIL, PHONE, IBAN, CC, SSN, ORG, LOC, NPI, DEA, VIN}
   K    = secret_key || ":" || lowercase(TYPE)
   M    = kind || ":" || subject
   kind ∈ {"id", "v"}
@@ -61,6 +61,9 @@ Hashing the surface form would make `Alice`, `ALICE`, and `alice` produce three 
 | `iban` | strip whitespace; uppercase | ISO 13616: `DE89 3704 0044 0532 0130 00` and `de89370400440532013000` are the same IBAN. |
 | `cc` | digits only | `4111-1111-1111-1111` and `4111111111111111` are the same card. |
 | `ssn` | digits only | Same as CC. |
+| `npi` | digits only | NPI is 10 digits; same provider ID across documents → same token. |
+| `dea` | strip whitespace; uppercase | DEA is 2 letters + 7 digits; folds incidental case. |
+| `vin` | strip whitespace; uppercase | VINs are uppercase per ISO 3779; folds incidental case. |
 
 `canonical()` is deterministic: it never changes its output for the same input within a major version of this tool. See §8 (Dependency stability).
 

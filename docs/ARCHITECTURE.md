@@ -31,6 +31,7 @@ src/pseudonymize_text/
   detectors/
     terms.py        # literals + id-grouping + wildcards (CSV/JSON loader)
     structured.py   # email, phone, iban, cc, ssn
+    phi.py          # NPI, DEA, VIN — checksum-validated, opt-in (--detectors phi)
     ner.py          # spaCy adapter (optional import)
   replacer.py       # span dedupe + right-to-left substitution
   tokenize.py       # HMAC-SHA256, key loading, type namespacing
@@ -111,7 +112,7 @@ Re-using the plan in `apply --plan` guarantees byte-identical output to what was
 
 ## Token Format
 
-`<TYPE:hexdigits>` where `TYPE` ∈ {`NAME`, `EMAIL`, `PHONE`, `IBAN`, `CC`, `SSN`, `ORG`, `LOC`} and `hexdigits` is 32 lowercase hex characters (128-bit truncated HMAC-SHA256).
+`<TYPE:hexdigits>` where `TYPE` ∈ {`NAME`, `EMAIL`, `PHONE`, `IBAN`, `CC`, `SSN`, `ORG`, `LOC`, `NPI`, `DEA`, `VIN`} and `hexdigits` is 32 lowercase hex characters (128-bit truncated HMAC-SHA256).
 
 Construction, canonicalization, kind-namespacing, and design rationale: [HASHING.md](HASHING.md). Key handling: [SECURITY.md](SECURITY.md). Regulatory mapping: [COMPLIANCE.md](COMPLIANCE.md).
 
@@ -144,7 +145,7 @@ One JSON object per line. Read by `apply --plan`; written by both `detect` and `
 | `col` | int | 1-based, column of `start`. |
 | `start`, `end` | int | **Character** offsets (UTF-8 source decoded to `str`); `end` is exclusive. |
 | `text` | string | Surface form actually matched. |
-| `detector` | string | `"literal"`, `"pattern"`, `"structured:<name>"` (e.g. `"structured:email"`), `"ner:<label>"` (e.g. `"ner:PERSON"`). |
+| `detector` | string | `"literal"`, `"pattern"`, `"structured:<name>"` (e.g. `"structured:email"`), `"phi:<name>"` (e.g. `"phi:npi"`), `"ner:<label>"` (e.g. `"ner:PERSON"`). |
 | `type` | string | Lowercase entity type. |
 | `id` | string \| null | Group `id` from term row, or `null`. |
 | `token` | string | Token to substitute. Recomputed from key at `apply` time when running with `--plan`; the value in the plan is informational. |
@@ -210,7 +211,7 @@ The current architecture does **not** support, and is not designed to support:
 - **Binary / non-text formats** (`.pdf`, `.docx`, `.xlsx`, images). The walker passes them through byte-identically; pseudonymization runs only on whitelisted text extensions and `.eml` / `.mbox`. Office / PDF support is deferred to 2.0.0.
 - **Mail attachment content.** Per [ADR_002](decisions/ADR_002.md), non-text MIME parts are replaced with a stub; their byte payload is not parsed.
 - **Multi-tenant key isolation in-process.** One HMAC key per process; tenants requiring isolation must run separate invocations with distinct `--key-file` paths.
-- **PHI-only HIPAA identifiers.** No MRN / NPI / DEA / VIN / device-ID detectors; covered only via operator-supplied `terms.csv` patterns. Track [#42](https://github.com/qte77/pseudonymize-text/issues/42) for a future `[phi]` extra.
+- **Full PHI coverage.** Checksum-validated **NPI / DEA / VIN** detectors ship in `detectors/phi.py` (opt-in via `--detectors phi`; see [PHI.md](PHI.md)). MRN, device IDs, and the remaining HIPAA-only categories stay out of scope — covered only via operator-supplied `terms.csv` patterns. Clinical NER / MRN / date-coarsening are tracked in [#42](https://github.com/qte77/pseudonymize-text/issues/42).
 - **Network-bound operations.** All I/O is local filesystem; no telemetry, no cloud KMS, no external NER service.
 - **GUI / web UI.** CLI-only by design for auditability and scriptability.
 

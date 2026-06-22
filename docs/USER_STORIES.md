@@ -42,7 +42,7 @@ As a compliance officer documenting our pseudonymization controls, I want a per-
 
 As an operator with mostly-PII corpora that sprinkle in PHI-shaped identifiers (MRN-like or NPI-like), I want literal `terms.csv` entries to take precedence over structured / NER detectors so I can patch coverage without forking the tool.
 
-→ Partial: `terms.csv` literal entries beat structured / NER per [ARCHITECTURE.md § Span precedence](ARCHITECTURE.md#span-precedence-overlap-resolution-in-replacerpy). Gaps stay explicit; no automatic PHI detection. Track [#42](https://github.com/qte77/pseudonymize-text/issues/42) for a `[phi]` extra.
+→ Partial: NPI / DEA / VIN are now auto-detected opt-in (`--detectors phi`, see [PHI.md](PHI.md)); other PHI (MRN, etc.) still relies on `terms.csv` literals, which beat structured / NER per [ARCHITECTURE.md § Span precedence](ARCHITECTURE.md#span-precedence-overlap-resolution-in-replacerpy). Clinical NER / MRN / date-coarsening tracked in [#42](https://github.com/qte77/pseudonymize-text/issues/42).
 
 ### Pipeline author — embed in a Python application
 
@@ -54,7 +54,7 @@ As a Python application author, I want to call `pseudonymize_text.transform(text
 
 ### Clinical-grade HIPAA Safe Harbor de-identification
 
-**Why**: PHI-only HIPAA identifier categories (MRN, NPI, account numbers, certificate / license numbers, device identifiers, biometric identifiers, full-face photos) are not detected. Use [philter](https://github.com/BCHSI/philter-ucsf) or Presidio's medical recognizers.
+**Why**: Full HIPAA Safe Harbor coverage is out of scope. NPI / DEA / VIN are detected opt-in (`--detectors phi`, see [PHI.md](PHI.md)), but the remaining categories (MRN, account / certificate numbers, device identifiers, biometric identifiers, full-face photos) are not. Use [philter](https://github.com/BCHSI/philter-ucsf) or Presidio's medical recognizers.
 
 ### Anonymization (vs pseudonymization)
 
@@ -78,7 +78,7 @@ As a Python application author, I want to call `pseudonymize_text.transform(text
 
 ## See also
 
-- [README.md § Use cases](../README.md#use-cases) — quick covered / not-covered / deferred summary.
+- [README.md § What](../README.md#what) — quick what / what-this-isn't summary.
 - [docs/landscape/de-identification.md](landscape/de-identification.md) — tool-selection guide vs Presidio / philter / Faker / scrubadub.
 - [docs/roadmap.md § Scope philosophy](roadmap.md#scope-philosophy) — modular-vs-broad steering principle.
 - [docs/ARCHITECTURE.md § Out of architectural scope](ARCHITECTURE.md#out-of-architectural-scope) — design-level non-support.

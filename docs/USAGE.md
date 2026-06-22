@@ -28,8 +28,8 @@ If neither key source is set, exit code `3`. If `--terms` cannot be read or pars
 |---|---|---|
 | `--terms FILE` | (required unless `--no-terms`) | Term list (CSV or JSON). Empty file allowed. |
 | `--no-terms` | off | Run without a term list (structured/NER only). Mutually exclusive with `--terms`. |
-| `--detectors LIST` | `literal,structured` | Comma list from `literal`, `structured`, `ner`. |
-| `--types LIST` | `name,email,phone,iban,cc,ssn,org,loc` | **Filter** on entity types — does not enable detectors. Types not produced by enabled detectors are simply unused. |
+| `--detectors LIST` | `literal,structured` | Comma list from `literal`, `structured`, `phi`, `ner`. `phi` adds checksum-validated NPI/DEA/VIN — see [PHI.md](PHI.md). |
+| `--types LIST` | `name,email,phone,iban,cc,ssn,org,loc,npi,dea,vin` | **Filter** on entity types — does not enable detectors. Types not produced by enabled detectors are simply unused. |
 | `--key-file PATH` | — | Read HMAC key from this file (overrides env var). |
 | `--report PATH` | `./runs/pseudonymize-report.jsonl` | Where to write the audit report. Parent directory is auto-created. Must **not** reside inside `<out_dir>`; exit `7` otherwise (same rule as `--mapping`, since the report holds plaintext spans). |
 | `--report-format FMT` | `jsonl` | `jsonl` or `tsv`. |
@@ -51,6 +51,7 @@ If neither key source is set, exit code `3`. If `--terms` cannot be read or pars
 | Var | Purpose |
 |---|---|
 | `PSEUDONYMIZE_KEY` | Hex-encoded HMAC secret. Used if `--key-file` is not given. |
+| `PSEUDONYMIZE_MAX_FILE_BYTES` | Per-file size cap in bytes (default 256 MiB); a larger file exits `6`. |
 
 ## Exit Codes
 
@@ -118,6 +119,15 @@ pseudonymize detect runs/in --no-terms \
   --detectors structured \
   --types iban,cc,ssn \
   --report runs/structured.jsonl
+```
+
+**PHI identifiers** (opt-in checksum-validated NPI / DEA / VIN; see [PHI.md](PHI.md)):
+
+```bash
+pseudonymize detect runs/in --no-terms \
+  --detectors phi \
+  --types npi,dea,vin \
+  --report runs/phi.jsonl
 ```
 
 **Single trusted-corpus run** (skip explicit `detect`):

@@ -6,7 +6,7 @@ Versions follow semver; current release is `0.2.0` (see [CHANGELOG.md](../CHANGE
 
 ## Scope philosophy
 
-**Modular, not broad.** Core stays narrow — text trees, mail (`.eml` / `.mbox`), and eight entity types via literal / structured / NER detectors. New capabilities ship as opt-in extras (`[ner]` today, `[phi]` proposed in [#42](https://github.com/qte77/pseudonymize-text/issues/42), `[office]` deferred to 2.0). This preserves the stdlib-first dependency surface and the audit-first positioning. Pick Presidio for broader ML detection or philter for HIPAA Safe Harbor — see [landscape/de-identification.md](landscape/de-identification.md).
+**Modular, not broad.** Core stays narrow — text trees, mail (`.eml` / `.mbox`), and eight entity types via literal / structured / NER detectors. New capabilities ship as opt-in groups/extras (`[ner]` extra today; the `phi` detector group — checksum NPI/DEA/VIN — shipped via `--detectors phi` per [#42](https://github.com/qte77/pseudonymize-text/issues/42), with clinical NER / MRN / date-coarsening deferred; `[office]` deferred to 2.0). This preserves the stdlib-first dependency surface and the audit-first positioning. Pick Presidio for broader ML detection or philter for HIPAA Safe Harbor — see [landscape/de-identification.md](landscape/de-identification.md).
 
 **Not on the roadmap.** Real-time HTTP / middleware redaction, image OCR / scanned-document PII, database column redaction at query time, and a GUI / web UI are explicitly **not** scoped — different products solve those.
 
