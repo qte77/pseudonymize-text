@@ -14,7 +14,8 @@ Construction, input canonicalization, namespacing, and stability of the hash-der
 token = "<" + TYPE + ":" + hex(HMAC-SHA256(K, M)[:16]) + ">"
 
 where:
-  TYPE ∈ {NAME, EMAIL, PHONE, IBAN, CC, SSN, ORG, LOC, NPI, DEA, VIN, MRN}
+  TYPE ∈ {NAME, EMAIL, PHONE, IBAN, CC, SSN, ORG, LOC, NPI, DEA, VIN, MRN,
+          DE_STEUER, FR_NIR, GB_NHS, ES_DNI, IT_CF}
   K    = secret_key || ":" || lowercase(TYPE)
   M    = kind || ":" || subject
   kind ∈ {"id", "v"}
@@ -65,6 +66,8 @@ Hashing the surface form would make `Alice`, `ALICE`, and `alice` produce three 
 | `mrn` | digits only | Medical record number (context-detected, opt-in `--phi-context`); same digits → same token. |
 | `dea` | strip whitespace; uppercase | DEA is 2 letters + 7 digits; folds incidental case. |
 | `vin` | strip whitespace; uppercase | VINs are uppercase per ISO 3779; folds incidental case. |
+| `de_steuer`, `fr_nir`, `gb_nhs` | digits only | German Steuer-ID / French NIR / UK NHS number; folds incidental separators. |
+| `es_dni`, `it_cf` | strip whitespace; uppercase | Spanish DNI/NIE and Italian Codice Fiscale are alphanumeric; folds incidental case. |
 
 `canonical()` is deterministic: it never changes its output for the same input within a major version of this tool. See §8 (Dependency stability).
 

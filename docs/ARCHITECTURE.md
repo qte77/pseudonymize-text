@@ -32,6 +32,7 @@ src/pseudonymize_text/
     terms.py        # literals + id-grouping + wildcards (CSV/JSON loader)
     structured.py   # email, phone, iban, cc, ssn
     phi.py          # NPI/DEA/VIN (checksum) + contextual MRN (--phi-context), opt-in (--detectors phi)
+    eu_ids.py       # DE/FR/GB/ES/IT national IDs (checksum), opt-in (--detectors eu)
     ner.py          # spaCy adapter (optional import)
   replacer.py       # span dedupe + right-to-left substitution
   tokenize.py       # HMAC-SHA256, key loading, type namespacing
@@ -112,7 +113,7 @@ Re-using the plan in `apply --plan` guarantees byte-identical output to what was
 
 ## Token Format
 
-`<TYPE:hexdigits>` where `TYPE` ∈ {`NAME`, `EMAIL`, `PHONE`, `IBAN`, `CC`, `SSN`, `ORG`, `LOC`, `NPI`, `DEA`, `VIN`, `MRN`} and `hexdigits` is 32 lowercase hex characters (128-bit truncated HMAC-SHA256).
+`<TYPE:hexdigits>` where `TYPE` ∈ {`NAME`, `EMAIL`, `PHONE`, `IBAN`, `CC`, `SSN`, `ORG`, `LOC`, `NPI`, `DEA`, `VIN`, `MRN`, `DE_STEUER`, `FR_NIR`, `GB_NHS`, `ES_DNI`, `IT_CF`} and `hexdigits` is 32 lowercase hex characters (128-bit truncated HMAC-SHA256).
 
 Construction, canonicalization, kind-namespacing, and design rationale: [HASHING.md](HASHING.md). Key handling: [SECURITY.md](SECURITY.md). Regulatory mapping: [COMPLIANCE.md](COMPLIANCE.md).
 
@@ -145,7 +146,7 @@ One JSON object per line. Read by `apply --plan`; written by both `detect` and `
 | `col` | int | 1-based, column of `start`. |
 | `start`, `end` | int | **Character** offsets (UTF-8 source decoded to `str`); `end` is exclusive. |
 | `text` | string | Surface form actually matched. |
-| `detector` | string | `"literal"`, `"pattern"`, `"structured:<name>"` (e.g. `"structured:email"`), `"phi:<name>"` (e.g. `"phi:npi"`), `"ner:<label>"` (e.g. `"ner:PERSON"`). |
+| `detector` | string | `"literal"`, `"pattern"`, `"structured:<name>"` (e.g. `"structured:email"`), `"phi:<name>"` (e.g. `"phi:npi"`), `"eu:<name>"` (e.g. `"eu:fr_nir"`), `"ner:<label>"` (e.g. `"ner:PERSON"`). |
 | `type` | string | Lowercase entity type. |
 | `id` | string \| null | Group `id` from term row, or `null`. |
 | `token` | string | Token to substitute. Recomputed from key at `apply` time when running with `--plan`; the value in the plan is informational. |
