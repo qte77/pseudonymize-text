@@ -37,6 +37,8 @@ If neither key source is set, exit code `3`. If `--terms` cannot be read or pars
 | `--ner` | off | Enable NER detector (requires `[ner]` extra). |
 | `--allow-broad-patterns` | off | Allow broad term patterns (`*`, `?`, `*@*`, `**`) that the loader rejects by default (exit `4`). |
 
+Detector coverage by jurisdiction (international / US / EU-planned) is tracked as the single source of truth in [ADR_003 § Detector coverage](decisions/ADR_003.md#detector-coverage-by-jurisdiction-source-of-truth).
+
 ### `apply` only
 
 | Flag | Default | Purpose |
