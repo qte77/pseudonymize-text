@@ -16,3 +16,7 @@ exclude_path = [
 # valid URL is shown to be CI-flaky. Keeping the list empty satisfies issue #5
 # until a real exclusion is needed.
 exclude = []
+
+# Validate intra-document anchors (e.g. README.md#what) so stale fragment
+# links are caught in CI, not by readers. Part of B1.
+include_fragments = true
