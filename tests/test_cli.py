@@ -500,6 +500,34 @@ def test_cli_phi_context_flag_gates_mrn(
     assert any(r["type"] == "mrn" and r["text"] == "1234567" for r in ctx_recs)
 
 
+def test_cli_detectors_eu_detects_steuer_and_off_by_default(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """E3: EU IDs are detected only with --detectors eu."""
+    import json as _json
+
+    in_dir = tmp_path / "in"
+    in_dir.mkdir()
+    (in_dir / "a.txt").write_text(
+        "Kunde Steuer-ID 36574261809 vermerkt.", encoding="utf-8"
+    )
+    monkeypatch.setenv("PSEUDONYMIZE_KEY", "ab" * 32)
+
+    base = tmp_path / "base.jsonl"
+    assert main(["detect", str(in_dir), "--no-terms", "--report", str(base)]) == 0
+    base_recs = [_json.loads(x) for x in base.read_text().splitlines()[1:]]
+    assert not any(r["type"] == "de_steuer" for r in base_recs)
+
+    eu = tmp_path / "eu.jsonl"
+    assert main(
+        ["detect", str(in_dir), "--no-terms", "--detectors", "eu", "--report", str(eu)]
+    ) == 0
+    eu_recs = [_json.loads(x) for x in eu.read_text().splitlines()[1:]]
+    assert any(
+        r["type"] == "de_steuer" and r["text"] == "36574261809" for r in eu_recs
+    )
+
+
 def test_cli_detect_zero_spans_emits_header_and_apply_plan_succeeds(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
