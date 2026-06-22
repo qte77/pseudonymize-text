@@ -496,3 +496,80 @@ def test_cli_detect_zero_spans_emits_header_and_apply_plan_succeeds(
     )
     assert rc == 0
     assert (out_dir / "a.txt").read_text(encoding="utf-8") == "the quick brown fox"
+
+
+def _eml_with_name_and_email() -> bytes:
+    """Minimal RFC 5322 message with a literal name + an email in the body."""
+    from email.message import EmailMessage
+
+    msg = EmailMessage()
+    msg["From"] = "Carol <carol@acme.com>"
+    msg["To"] = "Dan <dan@acme.com>"
+    msg["Subject"] = "intro"
+    msg.set_content("Hi, this is Jane Roe from Acme; reply to dan@acme.com.")
+    return bytes(msg)
+
+
+def test_cli_apply_plan_mail_without_terms_warns(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """A2: apply --plan + mail + no --terms silently under-redacts literal
+    entities (mail is re-detected with an empty term list) — warn on stderr."""
+    in_dir = tmp_path / "in"
+    in_dir.mkdir()
+    (in_dir / "m.eml").write_bytes(_eml_with_name_and_email())
+    monkeypatch.setenv("PSEUDONYMIZE_KEY", "ab" * 32)
+
+    plan = tmp_path / "plan.jsonl"
+    assert main(["detect", str(in_dir), "--no-terms", "--report", str(plan)]) == 0
+
+    out_dir = tmp_path / "out"
+    rc = main(
+        [
+            "apply", str(in_dir), str(out_dir),
+            "--no-terms",
+            "--plan", str(plan),
+            "--mapping", str(tmp_path / "mapping.json"),
+            "--report", str(tmp_path / "report.jsonl"),
+        ]
+    )
+    assert rc == 0
+    err = capsys.readouterr().err
+    assert "literal entities" in err
+    assert "--terms" in err
+
+
+def test_cli_apply_plan_mail_with_terms_does_not_warn(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """A2: the warning fires only on the risky combination — passing --terms
+    for the mail corpus must not warn."""
+    in_dir = tmp_path / "in"
+    in_dir.mkdir()
+    (in_dir / "m.eml").write_bytes(_eml_with_name_and_email())
+    terms = tmp_path / "terms.csv"
+    terms.write_text("value,type\nJane Roe,name\n", encoding="utf-8")
+    monkeypatch.setenv("PSEUDONYMIZE_KEY", "ab" * 32)
+
+    plan = tmp_path / "plan.jsonl"
+    assert (
+        main(["detect", str(in_dir), "--terms", str(terms), "--report", str(plan)])
+        == 0
+    )
+
+    out_dir = tmp_path / "out"
+    rc = main(
+        [
+            "apply", str(in_dir), str(out_dir),
+            "--terms", str(terms),
+            "--plan", str(plan),
+            "--mapping", str(tmp_path / "mapping.json"),
+            "--report", str(tmp_path / "report.jsonl"),
+        ]
+    )
+    assert rc == 0
+    assert "literal entities" not in capsys.readouterr().err
