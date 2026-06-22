@@ -468,6 +468,38 @@ def test_cli_detectors_phi_finds_npi_and_off_by_default(
     assert any(r["type"] == "npi" and r["text"] == "1234567893" for r in phi_records)
 
 
+def test_cli_phi_context_flag_gates_mrn(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """E2-A: MRN is detected only with --detectors phi AND --phi-context."""
+    import json as _json
+
+    in_dir = tmp_path / "in"
+    in_dir.mkdir()
+    (in_dir / "a.txt").write_text("Patient MRN 1234567 seen today.", encoding="utf-8")
+    monkeypatch.setenv("PSEUDONYMIZE_KEY", "ab" * 32)
+
+    # --detectors phi alone does NOT detect MRN (it is context-gated).
+    base = tmp_path / "base.jsonl"
+    assert main(
+        ["detect", str(in_dir), "--no-terms", "--detectors", "phi", "--report", str(base)]
+    ) == 0
+    base_recs = [_json.loads(x) for x in base.read_text().splitlines()[1:]]
+    assert not any(r["type"] == "mrn" for r in base_recs)
+
+    # Adding --phi-context enables it.
+    ctx = tmp_path / "ctx.jsonl"
+    assert main(
+        [
+            "detect", str(in_dir), "--no-terms",
+            "--detectors", "phi", "--phi-context",
+            "--report", str(ctx),
+        ]
+    ) == 0
+    ctx_recs = [_json.loads(x) for x in ctx.read_text().splitlines()[1:]]
+    assert any(r["type"] == "mrn" and r["text"] == "1234567" for r in ctx_recs)
+
+
 def test_cli_detect_zero_spans_emits_header_and_apply_plan_succeeds(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
