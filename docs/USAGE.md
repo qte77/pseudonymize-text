@@ -55,6 +55,10 @@ Detector coverage by jurisdiction (international / US / EU-planned) is tracked a
 | `PSEUDONYMIZE_KEY` | Hex-encoded HMAC secret. Used if `--key-file` is not given. |
 | `PSEUDONYMIZE_MAX_FILE_BYTES` | Per-file size cap in bytes (default 256 MiB); a larger file exits `6`. |
 
+## Output on success
+
+Both subcommands print a one-line summary to **stderr** — e.g. `pseudonymize detect: 5 spans across 2 files — email:3 name:2`. It carries counts only (span totals by type and the number of affected files); it never includes span text, context, or tokens, so it is safe to log. `stdout` is unused.
+
 ## Exit Codes
 
 | Code | Meaning |
