@@ -498,12 +498,33 @@ def _run_apply(args: argparse.Namespace, key: bytes, terms: list) -> int:
 
     mapping: dict[str, MappingRecord] = {}
     now = datetime.now(tz=UTC)
+    warned_mail_no_terms = False
 
     def transform(text: str, rel: Path) -> str:
+        nonlocal warned_mail_no_terms
         # Mail is re-detected even under --plan: the plan keys spans by file with
         # part-local offsets that cannot be replayed across a message's parts.
         # Detectors are deterministic, so the result still matches the audit plan.
-        if args.plan is not None and not formats.is_mail_format(rel.suffix):
+        is_mail = formats.is_mail_format(rel.suffix)
+        # That re-detection runs the literal detector against the apply-time term
+        # list. Under --plan with no --terms, literal names/orgs in mail go
+        # unredacted — warn once so the silent under-redaction is visible (A2).
+        if (
+            not warned_mail_no_terms
+            and is_mail
+            and args.plan is not None
+            and not terms
+            and "literal" in args.enabled_detectors
+        ):
+            print(
+                f"warning: --plan + mail ({rel.as_posix()}) with no --terms: "
+                "mail parts are re-detected with an empty term list, so literal "
+                "entities (names/orgs) will not be redacted; pass --terms for "
+                "mail corpora (see USAGE.md § Mail corpus)",
+                file=sys.stderr,
+            )
+            warned_mail_no_terms = True
+        if args.plan is not None and not is_mail:
             spans = plan_spans.get(rel.as_posix(), [])
         else:
             spans = _detect_spans_for_text(
