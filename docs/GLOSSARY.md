@@ -18,9 +18,9 @@ Background reading: <https://www.hipaajournal.com/phi-vs-pii/> · <https://gdprl
 
 ### What this tool detects
 
-- **Targets the GDPR notion of "personal data" and the PII overlap with PHI** — names, SSN, phone, email, IBAN, credit card, and (via optional NER) organizations and locations.
-- **Does not target PHI-only identifiers** — medical record numbers (MRN), health plan IDs, device identifiers, biometric identifiers, full-face photos, license/certificate numbers, account numbers. These are out of scope at v0.1.
-- **For HIPAA Safe Harbor de-identification of clinical notes**, prefer [philter](https://github.com/BCHSI/philter-ucsf) or Microsoft Presidio's medical recognizers — see [Related projects](landscape/de-identification.md). A PHI-detector extension is not currently on the [roadmap](roadmap.md); track interest at [github.com/qte77/pseudonymize-text/issues](https://github.com/qte77/pseudonymize-text/issues).
+- **Targets the GDPR notion of "personal data" and the PII overlap with PHI** — names, SSN, phone, email, IBAN, credit card, and (via optional NER) organizations and locations. Coverage is jurisdiction-tagged in [ADR_003 § coverage table](decisions/ADR_003.md#detector-coverage-by-jurisdiction-source-of-truth).
+- **Detects a limited, opt-in set of PHI and national identifiers** — checksum-validated NPI/DEA/VIN and context-cued MRN (`--detectors phi` / `--phi-context`, see [PHI.md](PHI.md)), and EU national IDs (`--detectors eu`). Health-plan IDs, device identifiers, biometric identifiers, full-face photos, and license/certificate numbers remain out of scope.
+- **For HIPAA Safe Harbor de-identification of clinical notes**, prefer [philter](https://github.com/BCHSI/philter-ucsf) or Microsoft Presidio's medical recognizers — see [Related projects](landscape/de-identification.md).
 
 ## Abbreviations
 
@@ -53,7 +53,7 @@ Background reading: <https://www.hipaajournal.com/phi-vs-pii/> · <https://gdprl
 | **MAC** | Message Authentication Code | Generic term for a keyed integrity primitive; HMAC is the construction we use. | [SECURITY.md](SECURITY.md) |
 | **MADR** | Markdown Architecture Decision Record | The ADR template format used in [docs/decisions/](decisions/). | [docs/decisions/](decisions/) |
 | **MIME** | Multipurpose Internet Mail Extensions | Email content-type system; `.eml`/`.mbox` parts are dispatched per MIME type. | [ARCHITECTURE.md](ARCHITECTURE.md) |
-| **MRN** | Medical Record Number | PHI identifier category; **not detected** by this tool. | [PII vs PHI](#pii-vs-phi) |
+| **MRN** | Medical Record Number | PHI identifier; detected opt-in via `--phi-context` (context-cued, no checksum). | [PHI.md](PHI.md) |
 | **NER** | Named Entity Recognition | spaCy-based detection of PERSON/ORG/LOC; optional via `[ner]` extra. | [ner-install.md](ner-install.md) |
 | **NFKC** | Normalization Form Compatibility Composition | Unicode normalization applied to `--ignore` entries to prevent zero-width-character bypass. | [SECURITY.md](SECURITY.md) |
 | **NHS number** | National Health Service number | UK patient identifier (10 digits, mod-11). NHS is the service/agency; the **number** is the identifier (type `gb_nhs`). Detected opt-in (`--detectors eu`). | [USAGE.md](USAGE.md) |

@@ -115,6 +115,8 @@ Re-using the plan in `apply --plan` guarantees byte-identical output to what was
 
 `<TYPE:hexdigits>` where `TYPE` ∈ {`NAME`, `EMAIL`, `PHONE`, `IBAN`, `CC`, `SSN`, `ORG`, `LOC`, `NPI`, `DEA`, `VIN`, `MRN`, `DE_STEUER`, `FR_NIR`, `GB_NHS`, `ES_DNI`, `IT_CF`} and `hexdigits` is 32 lowercase hex characters (128-bit truncated HMAC-SHA256).
 
+Detector coverage by jurisdiction (international / US / EU) is the source of truth in [ADR_003 § coverage table](decisions/ADR_003.md#detector-coverage-by-jurisdiction-source-of-truth).
+
 Construction, canonicalization, kind-namespacing, and design rationale: [HASHING.md](HASHING.md). Key handling: [SECURITY.md](SECURITY.md). Regulatory mapping: [COMPLIANCE.md](COMPLIANCE.md).
 
 ## Report Schema (JSONL)

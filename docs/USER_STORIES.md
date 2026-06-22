@@ -10,7 +10,7 @@ User stories use the form "As a `<role>`, I want `<capability>`, so that `<outco
 
 As a data engineer with a tree of `.txt` / `.csv` / `.eml` files containing PII, I want to substitute every name / email / phone / IBAN / credit card / SSN / organization with a stable token, so that I can hand the tree to a downstream consumer without leaking individual identity but retain joinability across files.
 
-→ Covered by `pseudonymize apply <in> <out> --terms terms.csv`. See [USAGE.md](USAGE.md).
+→ Covered by `pseudonymize apply <in> <out> --terms terms.csv`. See [USAGE.md](USAGE.md). Opt-in detectors add US PHI (`--detectors phi`) and EU national IDs (`--detectors eu`); coverage by jurisdiction is the source of truth in [ADR_003](decisions/ADR_003.md#detector-coverage-by-jurisdiction-source-of-truth).
 
 ### DPO / auditor — verify what was substituted before any output is written
 
@@ -42,7 +42,7 @@ As a compliance officer documenting our pseudonymization controls, I want a per-
 
 As an operator with mostly-PII corpora that sprinkle in PHI-shaped identifiers (MRN-like or NPI-like), I want literal `terms.csv` entries to take precedence over structured / NER detectors so I can patch coverage without forking the tool.
 
-→ Partial: NPI / DEA / VIN are now auto-detected opt-in (`--detectors phi`, see [PHI.md](PHI.md)); other PHI (MRN, etc.) still relies on `terms.csv` literals, which beat structured / NER per [ARCHITECTURE.md § Span precedence](ARCHITECTURE.md#span-precedence-overlap-resolution-in-replacerpy). Clinical NER / MRN / date-coarsening tracked in [#42](https://github.com/qte77/pseudonymize-text/issues/42).
+→ Partial: NPI / DEA / VIN are auto-detected opt-in (`--detectors phi`), and context-cued MRN via `--phi-context` (see [PHI.md](PHI.md)); other PHI still relies on `terms.csv` literals, which beat structured / NER per [ARCHITECTURE.md § Span precedence](ARCHITECTURE.md#span-precedence-overlap-resolution-in-replacerpy). Clinical NER and date-coarsening tracked in [#42](https://github.com/qte77/pseudonymize-text/issues/42).
 
 ### Pipeline author — embed in a Python application
 
@@ -54,7 +54,7 @@ As a Python application author, I want to call `pseudonymize_text.transform(text
 
 ### Clinical-grade HIPAA Safe Harbor de-identification
 
-**Why**: Full HIPAA Safe Harbor coverage is out of scope. NPI / DEA / VIN are detected opt-in (`--detectors phi`, see [PHI.md](PHI.md)), but the remaining categories (MRN, account / certificate numbers, device identifiers, biometric identifiers, full-face photos) are not. Use [philter](https://github.com/BCHSI/philter-ucsf) or Presidio's medical recognizers.
+**Why**: Full HIPAA Safe Harbor coverage is out of scope. NPI / DEA / VIN are detected opt-in (`--detectors phi`) and context-cued MRN via `--phi-context` (see [PHI.md](PHI.md)), but the remaining categories (account / certificate numbers, device identifiers, biometric identifiers, full-face photos) are not. Use [philter](https://github.com/BCHSI/philter-ucsf) or Presidio's medical recognizers.
 
 ### Anonymization (vs pseudonymization)
 
