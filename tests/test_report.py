@@ -84,3 +84,38 @@ def test_tsv_report_writer_prefixes_formula_cells(tmp_path: Path) -> None:
     by_col = dict(zip(columns, cells, strict=True))
     assert by_col["text"] == "'=cmd|' /C calc'!A0"
     assert by_col["context"] == "'@SUM(A1:A9)"
+
+
+def test_report_writer_write_header_emits_header_without_record(
+    tmp_path: Path,
+) -> None:
+    """A1: write_header() emits the header with no records, idempotently."""
+    path = tmp_path / "report.jsonl"
+    writer = ReportWriter(path, _header())
+    writer.write_header()
+    writer.write_header()  # idempotent: must not duplicate the header
+
+    lines = path.read_text(encoding="utf-8").splitlines()
+    assert len(lines) == 1
+    assert "tool_version" in lines[0]
+
+    # A later record appends without re-emitting the header.
+    writer.write(_record())
+    lines = path.read_text(encoding="utf-8").splitlines()
+    assert len(lines) == 2
+    assert "tool_version" not in lines[1]
+
+
+def test_tsv_report_writer_write_header_emits_header_without_record(
+    tmp_path: Path,
+) -> None:
+    """A1: TSV write_header() emits meta comment + column row, no records."""
+    path = tmp_path / "report.tsv"
+    writer = TsvReportWriter(path, _header())
+    writer.write_header()
+    writer.write_header()  # idempotent
+
+    lines = path.read_text(encoding="utf-8").splitlines()
+    assert len(lines) == 2
+    assert lines[0].startswith("# ")
+    assert "text" in lines[1].split("\t")

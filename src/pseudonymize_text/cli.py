@@ -428,6 +428,9 @@ def _run_detect(args: argparse.Namespace, key: bytes, terms: list) -> int:
     if args.report.exists():
         args.report.unlink()
     writer = _make_report_writer(args, header)
+    # Emit the header up front so a zero-span run still leaves a valid
+    # header-only report that `apply --plan` reads as an empty plan (A1).
+    writer.write_header()
     max_bytes = _max_file_bytes()
 
     def record(text: str, rel: Path) -> str:
@@ -489,6 +492,9 @@ def _run_apply(args: argparse.Namespace, key: bytes, terms: list) -> int:
     if args.report.exists():
         args.report.unlink()
     writer = _make_report_writer(args, header)
+    # Parity with detect: an apply that substitutes nothing still leaves an
+    # auditable header-only report rather than no file at all (A1).
+    writer.write_header()
 
     mapping: dict[str, MappingRecord] = {}
     now = datetime.now(tz=UTC)

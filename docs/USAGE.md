@@ -31,7 +31,7 @@ If neither key source is set, exit code `3`. If `--terms` cannot be read or pars
 | `--detectors LIST` | `literal,structured` | Comma list from `literal`, `structured`, `phi`, `ner`. `phi` adds checksum-validated NPI/DEA/VIN — see [PHI.md](PHI.md). |
 | `--types LIST` | `name,email,phone,iban,cc,ssn,org,loc,npi,dea,vin` | **Filter** on entity types — does not enable detectors. Types not produced by enabled detectors are simply unused. |
 | `--key-file PATH` | — | Read HMAC key from this file (overrides env var). |
-| `--report PATH` | `./runs/pseudonymize-report.jsonl` | Where to write the audit report. Parent directory is auto-created. Must **not** reside inside `<out_dir>`; exit `7` otherwise (same rule as `--mapping`, since the report holds plaintext spans). |
+| `--report PATH` | `./runs/pseudonymize-report.jsonl` | Where to write the audit report. Parent directory is auto-created. Always written — a zero-span run still emits the header line, so `apply --plan` on an empty report is a valid no-op (not exit `4`). Must **not** reside inside `<out_dir>`; exit `7` otherwise (same rule as `--mapping`, since the report holds plaintext spans). |
 | `--report-format FMT` | `jsonl` | `jsonl` or `tsv`. |
 | `--ignore FILE` | — | Suppression list (one literal per line, `#` comments). Matches a span's surface `text` field; comparison is NFKC + casefold. |
 | `--ner` | off | Enable NER detector (requires `[ner]` extra). |
