@@ -8,8 +8,11 @@ This page enumerates the de-identification / pseudonymization tools we evaluated
 
 | Project | License | Stance |
 |---|---|---|
-| [microsoft/presidio](https://github.com/microsoft/presidio) | MIT | Python-native PII detection + de-identification; covers PHI, financial PII, and generic PII. Pairs with spaCy backends. One-way by default (hash operator uses random salt); reversibility via the encrypt operator requires separate AES key management. |
-| [BCHSI/philter-ucsf](https://github.com/BCHSI/philter-ucsf) | BSD-3-Clause | Rule-based clinical-note de-identifier; HIPAA Safe Harbor coverage. Redacts text; not reversible. |
+| [microsoft/presidio](https://github.com/microsoft/presidio) | MIT | Python-native PII detection + de-identification; covers PHI, financial PII, and generic PII. Pairs with spaCy backends. Actively maintained. One-way by default (the hash operator defaults to a random per-entity salt); reversibility via the encrypt (AES) operator requires separate key management. |
+| [BCHSI/philter-ucsf](https://github.com/BCHSI/philter-ucsf) | BSD-3-Clause | Rule-based clinical-note de-identifier; HIPAA Safe Harbor coverage. Redacts text; not reversible. **Stale** — last release 2020. |
+| [SironaMedical/philter-lite](https://github.com/SironaMedical/philter-lite) | BSD-3-Clause | Maintained, pip-installable refactor of philter-ucsf (releases through 2026). Same one-way clinical-PHI redaction; not reversible. |
+| [joke2k/faker](https://github.com/joke2k/faker) | MIT | Synthetic-data **generator**, not a de-identifier — fabricates new values unrelated to the input. Actively maintained; listed only as a contrast. |
+| [LeapBeyond/scrubadub](https://github.com/LeapBeyond/scrubadub) | MIT | Library-API PII redaction; swaps entities for typed placeholders (`{{EMAIL}}`). Not reversible. **Stale** — last release 2023. |
 
 ## When `pseudonymize-text` is the right fit
 
@@ -22,10 +25,10 @@ This page enumerates the de-identification / pseudonymization tools we evaluated
 
 | If you need | Use |
 |---|---|
-| HIPAA Safe Harbor coverage of clinical notes | [philter](https://github.com/BCHSI/philter-ucsf) |
+| HIPAA Safe Harbor coverage of clinical notes | [philter-ucsf](https://github.com/BCHSI/philter-ucsf), or its maintained fork [philter-lite](https://github.com/SironaMedical/philter-lite) |
 | Broad multi-language PII detection out of the box with mature ML recognizers | [Presidio](https://github.com/microsoft/presidio) |
 | Synthetic data generation rather than reversible pseudonymization | [Faker](https://github.com/joke2k/faker) |
-| Streaming PII redaction in Python via library API | [scrubadub](https://github.com/LeapBeyond/scrubadub) |
+| Library-API PII redaction with typed placeholders (Python) | [scrubadub](https://github.com/LeapBeyond/scrubadub) (last release 2023) |
 | PHI-specific identifiers (MRN, NPI, DEA, VIN, device IDs) | [philter](https://github.com/BCHSI/philter-ucsf) or Presidio's medical recognizers — **not** detected by `pseudonymize-text` (see [GLOSSARY.md § PII vs PHI](../GLOSSARY.md#pii-vs-phi)) |
 
 ## Mail corpora
