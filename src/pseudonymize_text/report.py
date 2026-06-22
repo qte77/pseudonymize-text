@@ -29,12 +29,23 @@ class ReportWriter:
         self._header = header
         self._header_written = False
 
+    def write_header(self) -> None:
+        """Emit the header line if it has not been written yet (idempotent).
+
+        Lets ``detect`` produce a valid header-only report when zero spans are
+        found, so a later ``apply --plan`` reads an empty plan instead of
+        failing on a missing file.
+        """
+        if self._header_written:
+            return
+        with self._path.open("a", encoding="utf-8") as fh:
+            fh.write(self._header.model_dump_json(by_alias=True) + "\n")
+        self._header_written = True
+
     def write(self, record: ReportRecord) -> None:
         """Append ``record``; emit the header line on the first call."""
+        self.write_header()
         with self._path.open("a", encoding="utf-8") as fh:
-            if not self._header_written:
-                fh.write(self._header.model_dump_json(by_alias=True) + "\n")
-                self._header_written = True
             fh.write(record.model_dump_json() + "\n")
 
 
@@ -52,15 +63,25 @@ class TsvReportWriter:
         self._header = header
         self._header_written = False
 
+    def write_header(self) -> None:
+        """Emit the ``# `` meta comment + column row if not yet written.
+
+        Idempotent; lets a zero-span ``detect`` leave a valid header-only TSV
+        report (see ``ReportWriter.write_header``).
+        """
+        if self._header_written:
+            return
+        with self._path.open("a", encoding="utf-8") as fh:
+            meta = self._header.model_dump(by_alias=True, mode="json")
+            meta_pairs = " ".join(f"{k}={v}" for k, v in meta.items())
+            fh.write(f"# {meta_pairs}\n")
+            fh.write("\t".join(_TSV_COLUMNS) + "\n")
+        self._header_written = True
+
     def write(self, record: ReportRecord) -> None:
         """Append ``record``; emit header + column row on first call."""
+        self.write_header()
         with self._path.open("a", encoding="utf-8") as fh:
-            if not self._header_written:
-                meta = self._header.model_dump(by_alias=True, mode="json")
-                meta_pairs = " ".join(f"{k}={v}" for k, v in meta.items())
-                fh.write(f"# {meta_pairs}\n")
-                fh.write("\t".join(_TSV_COLUMNS) + "\n")
-                self._header_written = True
             row = record.model_dump(mode="json")
             fh.write(
                 "\t".join(_tsv_cell(row.get(col)) for col in _TSV_COLUMNS) + "\n"
