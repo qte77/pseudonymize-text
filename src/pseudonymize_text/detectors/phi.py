@@ -2,8 +2,9 @@
 
 Checksum-validated, dependency-light (reuses ``stdnum.luhn`` for NPI; DEA and
 VIN checksums are hand-rolled — neither is in python-stdnum 2.2). Off by
-default; enable with ``--detectors phi``. Clinical-NER and contextual MRN
-detection are deferred (they need a gated model / operator context).
+default; enable with ``--detectors phi``. MRN has no checksum, so contextual
+MRN detection (``detect_mrn``) is opt-in via ``--phi-context``. Clinical-NER
+detection is deferred (it needs a gated model).
 """
 
 import re
@@ -78,4 +79,42 @@ def detect_vin(text: str) -> Iterator[Span]:
             yield Span(
                 start=m.start(), end=m.end(), text=m.group(0),
                 type="vin", detector="phi:vin",
+            )
+
+
+# MRN: a 6-10 digit run gated on a nearby cue word. Medical record numbers have
+# no checksum, so this is noisier than the types above — opt in via
+# `--phi-context`. The cue must fall within `_MRN_CONTEXT_WINDOW` chars.
+_MRN_RE = re.compile(r"\b\d{6,10}\b")
+_MRN_CUE_RE = re.compile(
+    r"\bmrn\b"
+    r"|\bmedical\s+record(?:\s+(?:number|no\.?|#))?"
+    r"|\brecord\s+(?:number|no\.?|#)"
+    r"|\bmr\s*#"
+    r"|\brec\s*#",
+    re.IGNORECASE,
+)
+_MRN_CONTEXT_WINDOW = 60
+
+
+def detect_mrn(text: str, window: int = _MRN_CONTEXT_WINDOW) -> Iterator[Span]:
+    """Yield a ``Span`` per cued 6-10 digit MRN within ``window`` chars.
+
+    The cue word (``MRN``, ``Medical Record Number``, ``Rec #`` …) must fall
+    within ``window`` chars of the digit run. MRNs carry no checksum, so
+    detection is context-gated and higher false-positive than NPI/DEA/VIN —
+    review the report. Opt-in via ``--phi-context``.
+    """
+    cues = [(m.start(), m.end()) for m in _MRN_CUE_RE.finditer(text)]
+    if not cues:
+        return
+    for m in _MRN_RE.finditer(text):
+        n_start, n_end = m.start(), m.end()
+        if any(
+            max(n_start - c_end, c_start - n_end) <= window
+            for c_start, c_end in cues
+        ):
+            yield Span(
+                start=n_start, end=n_end, text=m.group(0),
+                type="mrn", detector="phi:mrn",
             )
