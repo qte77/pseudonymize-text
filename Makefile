@@ -24,7 +24,7 @@ test:
 
 lint:
 	uv run ruff check --no-cache .
-	markdownlint README.md docs/
+	markdownlint README.md CONTRIBUTING.md AGENTS.md CHANGELOG.md docs/
 
 lint_terms:
 	uv run python -m pseudonymize_text.lint_terms $(TERMS_FILE)
