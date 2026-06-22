@@ -42,6 +42,7 @@ Issues = "https://github.com/qte77/pseudonymize-text/issues"
 [dependency-groups]
 dev = [
   "scriv[toml]>=1.8",
+  "bump-my-version>=0.29",
     "pytest>=9.1.1",
   "pytest-cov>=5.0",
   "hypothesis>=6.155.6",
@@ -93,3 +94,36 @@ categories = ["Added", "Changed", "Deprecated", "Removed", "Fixed", "Security"]
 md_header_level = "2"
 entry_title_template = "[{{ version }}] - {{ date.strftime('%Y-%m-%d') }}"
 md_html_anchors = false
+
+[tool.bumpversion]
+# [project].version is the single source of truth; bump-my-version bumps + commits and
+# syncs src/pseudonymize_text/__init__.py + the README badge. Tag creation is deferred to
+# tag-release.yaml so the tag lands on main's squash-merge commit (never on a bump branch).
+current_version = "0.2.0"
+parse = "(?P<major>\\d+)\\.(?P<minor>\\d+)\\.(?P<patch>\\d+)"
+serialize = ["{major}.{minor}.{patch}"]
+commit = true
+tag = true
+allow_dirty = false
+ignore_missing_version = false
+sign_tags = false
+tag_name = "v{new_version}"
+tag_message = "v{new_version}"
+message = "chore(release): bump {current_version} -> {new_version}"
+
+# pyproject.toml: matches both [project].version and [tool.bumpversion].current_version.
+[[tool.bumpversion.files]]
+filename = "pyproject.toml"
+search = 'version = "{current_version}"'
+replace = 'version = "{new_version}"'
+
+[[tool.bumpversion.files]]
+filename = "src/pseudonymize_text/__init__.py"
+search = '__version__ = "{current_version}"'
+replace = '__version__ = "{new_version}"'
+
+# README version badge keeps the project's teal token (58f4c2), not the canon's -blue.
+[[tool.bumpversion.files]]
+filename = "README.md"
+search = "version-{current_version}-58f4c2"
+replace = "version-{new_version}-58f4c2"
