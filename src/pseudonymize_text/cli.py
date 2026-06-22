@@ -66,6 +66,11 @@ def _build_parser() -> argparse.ArgumentParser:
         help="comma list of entity types to keep",
     )
     common.add_argument("--ner", action="store_true", help="enable NER (requires [ner] extra)")
+    common.add_argument(
+        "--allow-broad-patterns",
+        action="store_true",
+        help="allow broad term patterns (*, ?, *@*, **) the loader rejects by default",
+    )
 
     detect = subs.add_parser("detect", parents=[common])
     detect.add_argument("in_dir", type=Path)
@@ -257,7 +262,7 @@ def _load_terms_or_rc(args: argparse.Namespace) -> list | int:
     if args.no_terms or args.terms is None:
         return []
     try:
-        return load_terms(args.terms)
+        return load_terms(args.terms, allow_broad=args.allow_broad_patterns)
     except (ValueError, OSError) as exc:
         print(f"error: --terms {args.terms}: {exc}", file=sys.stderr)
         return EXIT_TERMS

@@ -406,3 +406,37 @@ def test_cli_detect_writes_report_with_header_and_spans(
     assert len(lines) >= 2
     assert "pseudonymize.report/1" in lines[0]
     assert "alice@acme.com" in "\n".join(lines[1:])
+
+
+def _broad_terms(tmp_path: Path) -> Path:
+    terms = tmp_path / "terms.csv"
+    terms.write_text("value,type\n*,email\n", encoding="utf-8")
+    return terms
+
+
+def test_cli_broad_pattern_rejected_without_flag(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    in_dir = tmp_path / "in"
+    in_dir.mkdir()
+    (in_dir / "a.txt").write_text("hi", encoding="utf-8")
+    monkeypatch.setenv("PSEUDONYMIZE_KEY", "ab" * 32)
+    rc = main(
+        ["detect", str(in_dir), "--terms", str(_broad_terms(tmp_path)),
+         "--report", str(tmp_path / "r.jsonl")]
+    )
+    assert rc == 4
+
+
+def test_cli_broad_pattern_allowed_with_flag(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    in_dir = tmp_path / "in"
+    in_dir.mkdir()
+    (in_dir / "a.txt").write_text("hi", encoding="utf-8")
+    monkeypatch.setenv("PSEUDONYMIZE_KEY", "ab" * 32)
+    rc = main(
+        ["detect", str(in_dir), "--terms", str(_broad_terms(tmp_path)),
+         "--allow-broad-patterns", "--report", str(tmp_path / "r.jsonl")]
+    )
+    assert rc == 0
