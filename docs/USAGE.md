@@ -1,6 +1,6 @@
 # Usage
 
-*For operators running the CLI.*
+*For operators running the CLI.* Installation is covered in the [README](../README.md#how).
 
 ## Subcommands
 
