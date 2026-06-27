@@ -116,3 +116,35 @@ def test_apply_plan_redacts_mail(
     assert "<NAME:" in header_text
     assert "<EMAIL:" in header_text
     assert "<IBAN:" in out
+
+
+def _multipart_bytes() -> bytes:
+    m = EmailMessage()
+    m["From"] = "Alice <alice@example.com>"
+    m["To"] = "Bob <bob@example.net>"
+    m["Subject"] = "hello"
+    m["Date"] = "Mon, 21 Nov 2023 09:55:06 -0600"
+    m.set_content("hi alice@example.com")
+    m.add_attachment(b"bin", maintype="image", subtype="png", filename="l.png")
+    return bytes(m)
+
+
+def test_transform_message_preserves_header_order() -> None:
+    """Pseudonymised headers keep their original position rather than moving to
+    the end.
+
+    ``del msg[h]; msg[h] = new`` re-appends each header in ``_PSEUDO_HEADERS``
+    iteration order; since that is a ``frozenset``, the order varies across
+    processes (PYTHONHASHSEED) — making the serialized ``.eml`` non-deterministic
+    and breaking the "same input + key -> same output" guarantee for mail.
+    Replacing the header value in place keeps positions stable.
+    """
+    raw = _multipart_bytes()
+    in_order = list(BytesParser(policy=policy.default).parsebytes(raw).keys())
+
+    msg = BytesParser(policy=policy.default).parsebytes(raw)
+    transform_message(msg, lambda text, _rel: text, Path("m.eml"))
+    out_order = list(msg.keys())
+
+    surviving = [h for h in in_order if h in out_order]
+    assert out_order == surviving
