@@ -35,6 +35,7 @@ MEMORY.md
 # Pseudonymize runtime sandbox — input, output, plans, mappings, keys all stay local
 runs/
 local/
+examples/_out/
 
 # Pseudonymize artefacts (HMAC key, mapping, report) — belt-and-braces for runs outside runs/
 .key
@@ -54,3 +55,6 @@ terms.json
 
 # Re-include test fixtures (the globs above would otherwise hide tests/fixtures/terms.csv etc.)
 !tests/fixtures/**
+
+# The demo term list is curated dummy data (no real PII) — keep it tracked.
+!examples/terms.csv
