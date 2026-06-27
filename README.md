@@ -23,17 +23,26 @@
 ## How
 
 ```bash
-# install (core; the spaCy NER extra is optional)
-uv add pseudonymize-text          # or: uv add 'pseudonymize-text[ner]'
+# Install the CLI. Not yet on PyPI — install from git (PyPI publish is planned).
+# Try it without installing:
+uvx --from git+https://github.com/qte77/pseudonymize-text pseudonymize --help
+# …or install the `pseudonymize` command persistently:
+uv tool install git+https://github.com/qte77/pseudonymize-text
+# (the optional spaCy NER extra is set up separately — see docs/ner-install.md)
 
-# 1. Generate a secret key (one-time, store outside the repo)
+# Set up a working tree: inputs to pseudonymize + a term list of known entities.
+mkdir -p runs/in
+printf 'value,type\nJane Doe,name\n' > runs/terms.csv
+echo 'Contact Jane Doe at jane@example.com' > runs/in/sample.txt
+
+# Generate a secret key (one-time; keep it gitignored and outside the output).
 openssl rand -hex 32 > .key
 
-# 2. Detect — writes a JSONL report; no changes to inputs or outputs
+# 1. Detect — writes a JSONL report; no changes to inputs or outputs
 PSEUDONYMIZE_KEY=$(cat .key) \
   pseudonymize detect runs/in --terms runs/terms.csv --report runs/plan.jsonl
 
-# 3. Review the plan, then apply
+# 2. Review runs/plan.jsonl, then apply
 PSEUDONYMIZE_KEY=$(cat .key) \
   pseudonymize apply runs/in runs/out --terms runs/terms.csv --plan runs/plan.jsonl
 ```
