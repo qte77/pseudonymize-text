@@ -3,7 +3,7 @@
 > Bulk-pseudonymize sensitive entities (names, emails, phones, IBANs, SSNs, credit cards, locations, organizations) across a folder tree — deterministically and reversibly.
 
 [![License](https://img.shields.io/badge/license-Apache--2.0-58f4c2.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-0.2.0-58f4c2.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.3.0-58f4c2.svg)](CHANGELOG.md)
 [![CodeQL](https://github.com/qte77/pseudonymize-text/actions/workflows/codeql.yaml/badge.svg)](https://github.com/qte77/pseudonymize-text/actions/workflows/codeql.yaml)
 [![CodeFactor](https://www.codefactor.io/repository/github/qte77/pseudonymize-text/badge)](https://www.codefactor.io/repository/github/qte77/pseudonymize-text)
 [![python](https://github.com/qte77/pseudonymize-text/actions/workflows/python.yaml/badge.svg)](https://github.com/qte77/pseudonymize-text/actions/workflows/python.yaml)
