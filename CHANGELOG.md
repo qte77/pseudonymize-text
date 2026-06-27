@@ -11,8 +11,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <!-- scriv-insert-here -->
 
-## [Unreleased]
-
 ## [0.2.0] - 2026-05-31
 
 Runtime sandbox + default-path cut. All runtime artefacts (key, report, mapping, term lists, plans, ignore lists) now land under `./runs/` by default; `.gitignore` ships the sandbox plus belt-and-braces per-artefact globs so default-named outputs stay out of the repo even when an operator runs outside `runs/`. Pre-1.0 behaviour change: operators relying on the previous cwd-root defaults must pass explicit `--report` / `--mapping` flags or move artefacts under `runs/`.
