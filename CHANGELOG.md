@@ -11,6 +11,63 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <!-- scriv-insert-here -->
 
+## [0.3.0] - 2026-06-27
+
+### Added
+
+- `CONTRIBUTING.md`: contributor workflow doc per the qte77 doc-structure canon — documentation hierarchy, commands, conventional commits, branches, changelog, and releasing (#75).
+- `CLAUDE.md`: one-line `@AGENTS.md` import so the Claude Code loader and agents read the same rules (#75).
+- `.github/workflows/{bump-my-version,tag-release,publish-release}.yaml`: estate-standard semi-automatic release pipeline (dispatch bump → PR → tag-on-merge → optional publish), mirrored from `paperverse` with SHA-pinned actions (#75).
+- `pyproject.toml`: `[tool.bumpversion]` config + `bump-my-version` dev dependency, bumping `pyproject.toml`, `src/pseudonymize_text/__init__.py`, and the README version badge from a single source of truth (#75).
+- `Makefile`: `changelog_new` / `changelog_preview` / `changelog_release` targets wrapping scriv (#75).
+
+- `--allow-broad-patterns` CLI flag (`detect`/`apply`) — wires up the broad-pattern override that `detectors.terms.load_terms` already enforced but that was never exposed on the command line (`docs/TERMS_CSV.md` documented it).
+
+- Opt-in `phi` detector group (`--detectors phi`) with checksum-validated **NPI** (Luhn over the 80840 prefix), **DEA** (registrant checksum), and **VIN** (ISO 3779 mod-11) detectors in `detectors/phi.py`; `npi`/`dea`/`vin` added to the default `--types`. Pure-Python, no new dependency. Part of [#42](https://github.com/qte77/pseudonymize-text/issues/42) — clinical NER / MRN / date-coarsening remain deferred. New `docs/PHI.md`.
+
+- `detect` and `apply` now print a one-line run summary to stderr on success — total spans, affected file count, and per-type counts (e.g. `pseudonymize detect: 5 spans across 2 files — email:3 name:2`). Counts only; never plaintext, context, or tokens. Part of D1.
+
+- `docs/decisions/README.md` — an index of accepted ADRs (001–003) with status and date. Part of B2.
+
+- Opt-in contextual MRN detection via `--phi-context` (with `--detectors phi`): a 6–10 digit run within 60 chars of an MRN cue (`MRN`, `Medical Record Number`, …) is tokenized as `<MRN:…>`. No checksum, so it is higher false-positive — review the report. Part of [#42](https://github.com/qte77/pseudonymize-text/issues/42).
+
+- Opt-in EU national-ID detectors via `--detectors eu` (tagged `eu` per ADR_003): German Steuer-ID (`de_steuer`), French NIR (`fr_nir`), UK NHS number (`gb_nhs`), Spanish DNI/NIE (`es_dni`), Italian Codice Fiscale (`it_cf`) — all checksum-validated via `python-stdnum`. Closes [#86](https://github.com/qte77/pseudonymize-text/issues/86).
+
+- `examples/` — a runnable end-to-end demo (`make demo`) over a small mixed corpus spanning `.txt`/`.md`/`.csv`/`.json`/`.log`/`.eml`: public-domain excerpts (RFC 2822, a Lincoln letter) plus synthetic records that exercise every detector (structured + opt-in PHI + EU IDs, all checksum-valid) and mail handling (RFC 2047 header tokenization, `DKIM-Signature` strip, attachment drop). The demo uses an ephemeral key (live output gitignored under `examples/_out/`); `examples/sample-output/` holds an illustrative committed snapshot. No key/mapping/plaintext committed. `examples/README.md` cross-references the larger [doc-pipeline-engine](https://github.com/qte77/doc-pipeline-engine) corpus.
+
+### Changed
+
+- `README.md`: restructured to the canonical estate order (Hero → Badges → What → How → Why → Refs → License); H1 renamed to `pseudonymize-text`, install fixed to `uv add pseudonymize-text`, Version badge linked to `CHANGELOG.md`, CodeQL badge added; static badges keep the teal `58f4c2` token by design (#75).
+- `AGENTS.md`: `## Commands` now points to `CONTRIBUTING.md § Commands` instead of duplicating the recipe list (#75).
+
+- `apply --plan` re-detects `.eml`/`.mbox` parts (the plan keys spans by file and cannot be replayed across a message's MIME parts); detection is deterministic, so the result still matches the audited plan. Keep `--terms` on the `apply` command for mail corpora — documented in `docs/USAGE.md`.
+
+- `docs/landscape/de-identification.md`: refreshed the comparison against verified upstream facts — added rows for [philter-lite](https://github.com/SironaMedical/philter-lite) (maintained philter fork), [Faker](https://github.com/joke2k/faker), and [scrubadub](https://github.com/LeapBeyond/scrubadub); flagged philter-ucsf (last release 2020) and scrubadub (2023) as stale; corrected the scrubadub entry from "streaming" to library-API typed-placeholder redaction.
+
+- `tokenize.canonicalize` and the report-record `detector` pattern now cover the PHI types; docs narrowed to reflect partial PHI support (`README.md`, `docs/{COMPLIANCE,ARCHITECTURE,USAGE,USER_STORIES,HASHING,roadmap}.md`, `docs/landscape/de-identification.md`).
+- `docs/USAGE.md`: documented the previously-missing `PSEUDONYMIZE_MAX_FILE_BYTES` environment variable.
+
+- Link checking now validates intra-document anchors (`include_fragments` in `lychee.toml`), so stale `#fragment` links in `README.md`/`docs/` are caught in CI. Part of B1.
+
+- markdownlint now also covers the root docs `CONTRIBUTING.md`, `AGENTS.md`, and `CHANGELOG.md` (in both `make lint` and the CI workflow). `CLAUDE.md` is excluded by omission — it is a one-line `@AGENTS.md` import that would otherwise trip MD041. Part of B3.
+
+- Docs now tag detector coverage by jurisdiction (international / US / EU) and link the ADR_003 source-of-truth table from README, COMPLIANCE, GLOSSARY, USER_STORIES, and ARCHITECTURE (previously only USAGE linked it). Reconciled stale "MRN out of scope" wording across these docs (MRN is opt-in via `--phi-context`). Part of E4.
+
+### Fixed
+
+- `detect` now scans `.eml`/`.mbox` mail (routed through `formats/` like `apply`), so the audit plan is no longer silently empty for mail — closing a leak where the documented `detect` → `apply --plan` workflow shipped mail with PII intact.
+- `.eml`/`.mbox` address headers (`From`/`To`/`Cc`/`Bcc`/`Reply-To`) are pseudonymised via `getaddresses`/`formataddr`, so display-name tokens are no longer mangled to `<NAME>:hex>` by the RFC 5322 address parser and the output re-parses cleanly.
+
+- `docs/USAGE.md`: removed the non-existent `--ner-confidence` flag from the discovery-pass example (it was never implemented).
+
+- `detect` now always writes the report header, even when zero spans are found, so a later `apply --plan` reads a valid empty plan (exit `0`) instead of failing exit `4` on a missing file. `apply` emits the header for parity. Part of A1.
+
+- `apply --plan` on a mail corpus with no `--terms` now warns on stderr: mail parts are re-detected with an empty term list, so literal entities (names/orgs) would silently pass through unredacted. Pass `--terms` for mail corpora. Part of A2.
+
+- README install instructions: `uv add pseudonymize-text` failed because the package is not yet on PyPI. The quickstart now installs the CLI from git (`uvx --from git+…` / `uv tool install git+…`, PyPI publish planned) and is copy-pasteable (creates `runs/in`, a sample `terms.csv`, and the key). USAGE points to the README for install.
+
+- Mail (`.eml`/`.mbox`) output is now deterministic. Pseudonymized headers are replaced in place instead of being deleted and re-added, which had re-ordered them in per-process (hash-randomized) `frozenset` order — so the same input + key now produces byte-identical output across runs, restoring the determinism guarantee for mail.
+
 ## [0.2.0] - 2026-05-31
 
 Runtime sandbox + default-path cut. All runtime artefacts (key, report, mapping, term lists, plans, ignore lists) now land under `./runs/` by default; `.gitignore` ships the sandbox plus belt-and-braces per-artefact globs so default-named outputs stay out of the repo even when an operator runs outside `runs/`. Pre-1.0 behaviour change: operators relying on the previous cwd-root defaults must pass explicit `--report` / `--mapping` flags or move artefacts under `runs/`.
