@@ -1,0 +1,32 @@
+From: Carol Danvers <carol.danvers@example.com>
+To: Bruce Banner <bruce.banner@example.net>
+Cc: Diana Prince <diana.prince@example.org>
+Subject: Account verification
+Date: Tue, 21 Nov 2023 09:55:06 -0600
+DKIM-Signature:
+ v=1; a=rsa-sha256; d=example.com; s=mail; bh=fake; b=AAAAFakeSignature0000
+MIME-Version: 1.0
+Content-Type: multipart/mixed; boundary="===============4361289520720958364=="
+
+--===============4361289520720958364==
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+
+Hi Bruce,
+
+Please verify the account for Carol Danvers.
+Phone +49 30 12345678, IBAN DE89370400440532013000.
+Reply to carol.danvers@example.com.
+
+Thanks,
+Carol
+
+--===============4361289520720958364==
+Content-Type: image/png
+Content-Transfer-Encoding: base64
+Content-Disposition: attachment; filename="logo.png"
+MIME-Version: 1.0
+
+ZmFrZSBiaW5hcnkgbG9nbyBwYXlsb2Fk
+
+--===============4361289520720958364==--
