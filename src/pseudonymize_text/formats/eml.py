@@ -94,8 +94,11 @@ def _pseudonymise_headers(
             new = _pseudonymise_addresses(str(value), transform, rel)
         else:
             new = transform(str(value), rel)
-        del msg[header]
-        msg[header] = new
+        # Replace in place rather than del + re-add: the latter re-appends the
+        # header at the end in `_PSEUDO_HEADERS` (frozenset) iteration order,
+        # which is hash-randomized per process — making the serialized message
+        # non-deterministic across runs. In-place keeps the original order.
+        msg.replace_header(header, new)
 
 
 def _pseudonymise_addresses(
