@@ -47,7 +47,7 @@ PSEUDONYMIZE_KEY=$(cat .key) \
   pseudonymize apply runs/in runs/out --terms runs/terms.csv --plan runs/plan.jsonl
 ```
 
-`runs/out` mirrors `runs/in` with sensitive strings replaced by `<TYPE:hash>` tokens (e.g. `<NAME:7f3a9c8b…>`); `runs/pseudonymize-mapping.json` is written next to (not inside) `runs/out`, and the whole `runs/` tree is gitignored. See [docs/USAGE.md](docs/USAGE.md) for the full CLI reference.
+`runs/out` mirrors `runs/in` with sensitive strings replaced by `<TYPE:hash>` tokens (e.g. `<NAME:7f3a9c8b…>`); `runs/pseudonymize-mapping.json` is written next to (not inside) `runs/out`, and the whole `runs/` tree is gitignored. See [docs/USAGE.md](docs/USAGE.md) for the full CLI reference. To watch it run end-to-end on a small bundled corpus, try `make demo` (see [examples/](examples/)).
 
 ## Why
 
@@ -57,6 +57,7 @@ Reversible pseudonymization sits between one-way redaction and full anonymizatio
 
 - [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) — modules, data flow, stack
 - [docs/USAGE.md](docs/USAGE.md) — CLI reference: subcommands, flags, exit codes
+- [examples/](examples/) — runnable end-to-end demo (`make demo`) on a small sample corpus
 - [docs/TERMS_CSV.md](docs/TERMS_CSV.md) — term-list input schema
 - [docs/COMPLIANCE.md](docs/COMPLIANCE.md) — GDPR / ENISA / EDPB / NIST posture
 - [docs/SECURITY.md](docs/SECURITY.md) — threat model, key & mapping handling

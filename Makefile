@@ -1,6 +1,6 @@
 TERMS_FILE ?= tests/fixtures/terms.csv
 
-.PHONY: help setup test lint lint_terms format check_links check changelog_new changelog_preview changelog_release clean
+.PHONY: help setup test lint lint_terms format check_links check demo changelog_new changelog_preview changelog_release clean
 
 help:
 	@echo 'Targets:'
@@ -11,6 +11,7 @@ help:
 	@echo '  format             Run ruff format'
 	@echo '  check_links        Run lychee against README and docs/'
 	@echo '  check              lint + test'
+	@echo '  demo               End-to-end run on examples/ with an ephemeral key'
 	@echo '  changelog_new      Add a changelog fragment under changelog.d/'
 	@echo '  changelog_preview  Preview the assembled release entry (no consume)'
 	@echo '  changelog_release  Collect fragments into CHANGELOG.md (VERSION=X.Y.Z)'
@@ -37,6 +38,22 @@ check_links:
 
 check: lint test
 
+# End-to-end demo over examples/in with a throwaway key. Enables the opt-in phi
+# and eu detectors + --phi-context so every detector type fires. Output and the
+# mapping land under examples/_out/ (gitignored); the key is ephemeral and not
+# retained — re-running produces fresh tokens. No secrets are committed.
+demo:
+	@KEY=$$(openssl rand -hex 32); \
+	rm -rf examples/_out; mkdir -p examples/_out; \
+	PSEUDONYMIZE_KEY=$$KEY uv run pseudonymize detect examples/in \
+	  --terms examples/terms.csv --detectors literal,structured,phi,eu --phi-context \
+	  --report examples/_out/plan.jsonl; \
+	PSEUDONYMIZE_KEY=$$KEY uv run pseudonymize apply examples/in examples/_out/out \
+	  --terms examples/terms.csv --detectors literal,structured,phi,eu --phi-context \
+	  --plan examples/_out/plan.jsonl --mapping examples/_out/mapping.json \
+	  --report examples/_out/report.jsonl; \
+	echo 'Pseudonymized output -> examples/_out/out/ (ephemeral key; mapping not retained)'
+
 changelog_new:
 	uv run scriv create --add
 
@@ -48,5 +65,5 @@ changelog_release:
 	uv run scriv collect --version $(VERSION)
 
 clean:
-	rm -rf build dist *.egg-info .pytest_cache .ruff_cache htmlcov .coverage runs
+	rm -rf build dist *.egg-info .pytest_cache .ruff_cache htmlcov .coverage runs examples/_out
 	find . -type d -name __pycache__ -prune -exec rm -rf {} +
