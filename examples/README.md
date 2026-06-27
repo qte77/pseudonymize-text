@@ -23,11 +23,30 @@ names / orgs / locations (literal terms), email / phone / IBAN / card / SSN
 
 ## What's in `in/`
 
+A mix of real public-domain excerpts and synthetic records, across several text
+formats:
+
 | File | Source / licence | Exercises |
 |---|---|---|
-| `rfc2822-excerpt.txt` | RFC 2822 example messages (IETF; freely distributable) | structured email detection (zero-config) + literal names |
+| `rfc2822-excerpt.txt` | RFC 2822 example messages (IETF; RFC 2606 example domains, placeholder names) | structured email detection (zero-config) + literal names |
 | `lincoln-letter-excerpt.txt` | Lincoln letter, 1848 (Project Gutenberg; public domain) | literal name / location via `terms.csv` |
 | `dummy-record.md` | **synthetic — every value fabricated** (IDs are checksum-valid so validators fire) | the full detector matrix incl. opt-in PHI + EU IDs |
+| `contacts.csv` | synthetic | structured email / SSN + literal names in a `.csv` |
+| `app.json` | synthetic | structured email / IBAN + literal name / org in a `.json` |
+| `access.log` | synthetic | structured email / card + literal name in `.log` lines |
+| `message.eml` | synthetic | **mail handling** — header tokenization (RFC 2047), `DKIM-Signature` strip, attachment drop ([ADR_002](../docs/decisions/ADR_002.md)), + body PII |
+
+## Sample output
+
+[`sample-output/`](sample-output/) is an **illustrative snapshot** of `make demo`'s
+result — the "after" to `in/`'s "before". For example, `message.eml` shows the
+`From`/`To`/`Cc` names and addresses replaced by RFC 2047-encoded `<NAME:…>` /
+`<EMAIL:…>` tokens, the `DKIM-Signature` stripped, the body PII tokenized, and the
+attachment replaced by `[part removed by pseudonymize: image/png; N bytes]`.
+
+Tokens are deterministic **per key**, and `make demo` uses an *ephemeral* key — so
+a fresh run produces different `<TYPE:hex>` values. The snapshot shows the shape,
+not reproducible tokens; it contains no key or mapping, so the tokens are opaque.
 
 ## Larger / real-world corpus
 
