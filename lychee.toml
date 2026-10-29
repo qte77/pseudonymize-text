@@ -18,5 +18,6 @@ exclude_path = [
 exclude = []
 
 # Validate intra-document anchors (e.g. README.md#what) so stale fragment
-# links are caught in CI, not by readers. Part of B1.
-include_fragments = true
+# links are caught in CI, not by readers. Part of B1. lychee >= 0.24 takes a
+# mode string, not a bool; "anchor-only" skips text fragments (#:~:text=).
+include_fragments = "anchor-only"
