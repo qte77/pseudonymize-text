@@ -12,6 +12,7 @@ from dataclasses import dataclass
 
 from .detectors.terms import TermRow, detect_terms
 from .replacer import Span
+from .report import _FORMULA_LEAD
 
 
 @dataclass(frozen=True)
@@ -28,14 +29,16 @@ def suggest_terms(spans: Iterable[Span], terms: list[TermRow]) -> list[Candidate
 
     Whitespace is collapsed and the dedupe key is ``(casefold(value), type)``;
     the first-seen surface form is kept. A value that an existing term (literal
-    or pattern) matches in full is dropped. Sorted by count descending, then
-    value, then type.
+    or pattern) matches in full is dropped, as is one starting with a
+    spreadsheet formula character (no real name does, and quote-prefixing it
+    would break loading the file unchanged as a term list). Sorted by count
+    descending, then value, then type.
     """
     counts: Counter[tuple[str, str]] = Counter()
     surface: dict[tuple[str, str], str] = {}
     for span in spans:
         value = " ".join(span.text.split())
-        if not value or _covered(value, terms):
+        if not value or value[0] in _FORMULA_LEAD or _covered(value, terms):
             continue
         key = (value.casefold(), span.type)
         surface.setdefault(key, value)

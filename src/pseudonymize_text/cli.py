@@ -38,7 +38,7 @@ from .replacer import Span, apply_spans
 from .report import ReportWriter, TsvReportWriter
 from .suggest import format_candidates_csv, suggest_terms
 from .tokenize import canonicalize, hmac_token
-from .walker import WHITELISTED_EXTENSIONS, walk_and_process
+from .walker import WHITELISTED_EXTENSIONS, _atomic_write_text, walk_and_process
 
 EXIT_OK = 0
 EXIT_USAGE = 2
@@ -578,9 +578,7 @@ def _run_suggest_terms(args: argparse.Namespace) -> int:
     if args.out is None:
         sys.stdout.write(csv_text)
         return EXIT_OK
-    fd = os.open(args.out, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
-    with os.fdopen(fd, "w", encoding="utf-8") as fh:
-        fh.write(csv_text)
+    _atomic_write_text(args.out, csv_text)
     return EXIT_OK
 
 
