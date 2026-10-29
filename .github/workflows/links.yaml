@@ -5,6 +5,7 @@ on:
     paths:
       - "**/*.md"
       - ".github/workflows/links.yaml"
+      - "lychee.toml"
   push:
     branches: [main]
   schedule:
