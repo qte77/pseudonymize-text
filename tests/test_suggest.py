@@ -107,3 +107,24 @@ def test_cli_suggest_terms_prints_to_stdout_without_out(
 
     assert main(["suggest-terms", str(in_dir)]) == 0
     assert capsys.readouterr().out.splitlines()[1:] == ["Acme Ltd,org,,1", "Carol,name,,1"]
+
+
+def test_suggest_terms_drops_spreadsheet_formula_values() -> None:
+    spans = [_ner('=HYPERLINK("http://x")'), _ner("@Carol"), _ner("-Bob"), _ner("Carol")]
+    assert suggest_terms(spans, []) == [Candidate(value="Carol", type="name", count=1)]
+
+
+def test_cli_suggest_terms_out_replaces_existing_file_with_mode_600(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _stub_ner(monkeypatch)
+    in_dir = tmp_path / "in"
+    in_dir.mkdir()
+    (in_dir / "a.txt").write_text("Carol", encoding="utf-8")
+    out = tmp_path / "candidates.csv"
+    out.write_text("stale", encoding="utf-8")
+    out.chmod(0o644)
+
+    assert main(["suggest-terms", str(in_dir), "--out", str(out)]) == 0
+    assert out.stat().st_mode & 0o777 == 0o600
+    assert out.read_text(encoding="utf-8").splitlines()[1] == "Carol,name,,1"
