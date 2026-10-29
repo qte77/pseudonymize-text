@@ -2,9 +2,9 @@ name: tag-release
 
 # Watches main for pyproject.toml version changes (typically the squash-merge
 # of a bump-my-version release PR) and creates the annotated v$NEW tag against
-# the actual main commit. Pairs with bump-my-version.yaml, which runs with
-# --no-tag so the tag is always reachable from main rather than orphaned on a
-# feature-branch commit that the squash discards.
+# the actual main commit. Thin caller of the qte77/.github reusable workflow;
+# its defaults (pyproject.toml, `v` prefix, `^version = "(.*)"`) match this repo.
+# Never deletes tags on failure — aborts if the tag already exists.
 
 on:
   push:
@@ -12,40 +12,10 @@ on:
     paths: [pyproject.toml]
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   tag:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
-        with:
-          fetch-depth: 2  # HEAD + parent so we can diff the version line
-
-      - name: Detect version bump
-        id: detect
-        run: |
-          set -euo pipefail
-          NEW=$(grep -m1 '^version = ' pyproject.toml | sed -E 's/version = "(.*)"/\1/')
-          OLD=$(git show HEAD^:pyproject.toml | grep -m1 '^version = ' | sed -E 's/version = "(.*)"/\1/')
-          if [ "$NEW" = "$OLD" ]; then
-            echo "no version change ($OLD == $NEW); nothing to tag"
-            exit 0
-          fi
-          echo "new=$NEW" >> "$GITHUB_OUTPUT"
-          echo "bumped=true" >> "$GITHUB_OUTPUT"
-
-      - name: Create + push annotated tag
-        if: steps.detect.outputs.bumped == 'true'
-        env:
-          NEW: ${{ steps.detect.outputs.new }}
-        run: |
-          set -euo pipefail
-          if git rev-parse -q --verify "refs/tags/v$NEW" >/dev/null; then
-            echo "tag v$NEW already exists at $(git rev-parse "v$NEW"); aborting"
-            exit 1
-          fi
-          git config user.email "release-tag@qte77.gha"
-          git config user.name "tag-release"
-          git tag -a -m "Release v$NEW" "v$NEW"
-          git push origin "v$NEW"
+    uses: qte77/.github/.github/workflows/tag-release.yml@935d32646ef520a1c072bc174485cc1f512aabfa  # main 2026-10-26
+    permissions:
+      contents: write
