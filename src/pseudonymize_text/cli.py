@@ -36,6 +36,7 @@ from .detectors.terms import detect_terms, load_terms
 from .mapping import save_mapping, upsert
 from .replacer import Span, apply_spans
 from .report import ReportWriter, TsvReportWriter
+from .suggest import format_candidates_csv, suggest_terms
 from .tokenize import canonicalize, hmac_token
 from .walker import WHITELISTED_EXTENSIONS, walk_and_process
 
@@ -99,6 +100,16 @@ def _build_parser() -> argparse.ArgumentParser:
     )
     apply_p.add_argument("--plan", type=Path)
 
+    suggest = subs.add_parser(
+        "suggest-terms",
+        help="dry-run: list NER candidate terms for review (requires [ner] extra)",
+    )
+    suggest.add_argument("in_dir", type=Path)
+    suggest.add_argument("--terms", type=Path, help="skip candidates this list already covers")
+    suggest.add_argument("--allow-broad-patterns", action="store_true")
+    suggest.add_argument("--out", type=Path, help="write candidates CSV here (default: stdout)")
+    suggest.set_defaults(no_terms=False)
+
     return parser
 
 
@@ -124,6 +135,9 @@ def main(argv: list[str] | None = None) -> int:
         args = parser.parse_args(argv)
     except SystemExit as exc:
         return int(exc.code) if isinstance(exc.code, int) else EXIT_USAGE
+
+    if args.subcommand == "suggest-terms":
+        return _run_suggest_terms(args)
 
     key = _resolve_key(args)
     if key is None:
@@ -534,6 +548,39 @@ def _run_detect(args: argparse.Namespace, key: bytes, terms: list) -> int:
         if rc != EXIT_OK:
             return rc
     _emit_run_summary("detect", type_counts, len(files_with_spans))
+    return EXIT_OK
+
+
+def _run_suggest_terms(args: argparse.Namespace) -> int:
+    """Run NER over in_dir and emit candidate term rows (issue #106).
+
+    Needs no key: nothing is tokenized, and no output tree, mapping, or report
+    is written. The candidates CSV holds plaintext entities, like terms.csv.
+    """
+    terms_or_rc = _load_terms_or_rc(args)
+    if isinstance(terms_or_rc, int):
+        return terms_or_rc
+    from .detectors.ner import detect_ner  # lazy import
+
+    in_dir = args.in_dir.resolve()
+    max_bytes = _max_file_bytes()
+    spans: list[Span] = []
+
+    def record(text: str, rel: Path) -> str:
+        spans.extend(detect_ner(text))
+        return text
+
+    for src in sorted(in_dir.rglob("*")):
+        rc = _record_source(src, in_dir, record, max_bytes)
+        if rc != EXIT_OK:
+            return rc
+    csv_text = format_candidates_csv(suggest_terms(spans, terms_or_rc))
+    if args.out is None:
+        sys.stdout.write(csv_text)
+        return EXIT_OK
+    fd = os.open(args.out, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+    with os.fdopen(fd, "w", encoding="utf-8") as fh:
+        fh.write(csv_text)
     return EXIT_OK
 
 

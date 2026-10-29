@@ -25,7 +25,7 @@
 
 ```text
 src/pseudonymize_text/
-  cli.py            # argparse entry; detect / apply subcommands
+  cli.py            # argparse entry; detect / apply / suggest-terms subcommands
   walker.py         # mirror in/ → out/, extension whitelist
   formats/          # .eml / .mbox readers and writers (see ADR_002)
   detectors/
@@ -38,6 +38,7 @@ src/pseudonymize_text/
   tokenize.py       # HMAC-SHA256, key loading, type namespacing
   mapping.py        # token <-> plaintext store (JSON)
   report.py         # JSONL/TSV writers, summary
+  suggest.py        # NER candidate aggregation for suggest-terms (dry-run)
 tests/
 pyproject.toml      # core deps + [ner] optional extra
 Makefile            # setup / run / test / lint
@@ -244,6 +245,7 @@ Every I/O boundary is pinned to **one** policy. Reviewers consult this table whe
 | Plan-file containment | `cli` plan loader | `fail-loud` (exit 4 if any `ReportRecord.file` contains `..`, is absolute, or resolves outside `<in_dir>`; prevents an operator-supplied plan from mirroring to arbitrary filesystem locations). |
 | Walker file enumeration | `walker.walk_and_process` | `fail-loud` (raises `SymlinkEscapeError` when a file symlink in `<in_dir>` resolves outside; UTF-8 decode errors propagate from `Path.read_text`; disk failures propagate from the atomic-write helper). Tmp output files are opened with mode `0o600` (umask-independent). |
 | Term-list load | `detectors.terms.load_terms` | `fail-loud` (raises `ValueError` on unsupported extension, broad pattern `*`/`*@*`/`?`/`**` without `allow_broad`, or malformed CSV/JSON; the same helper backs `lint_terms` so detector and lint cannot disagree). |
+| Candidate CSV write | `cli` `suggest-terms --out` | `fail-loud` (disk full / permission denied propagated). Opened with mode `0o600` (umask-independent) because candidates are plaintext entities, like a term list. Without `--out` the CSV goes to stdout; no output tree, mapping, or report is written. |
 | Structured-detector validation | `detectors.structured.detect_*` | `wrap-continue`. `python-stdnum`'s `iban.is_valid` / `luhn.is_valid` are predicates (do not raise); `phonenumbers.PhoneNumberMatcher` swallows its own parse errors and yields only valid candidates. Lookalikes that fail validation are silently skipped so a single false-positive does not abort the file. |
 | NER detector lazy import | `detectors.ner.detect_ner` | `fail-loud` (raises `ImportError` with `[ner]`-extra install hint if `spacy` is not installed). spaCy's own model load (`spacy.load(model_name)`) propagates `OSError` if the model is not installed. See [docs/ner-install.md](ner-install.md) for the hash-pinned installation procedure. |
 

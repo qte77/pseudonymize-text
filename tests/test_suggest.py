@@ -8,11 +8,11 @@ from collections.abc import Iterator
 from pathlib import Path
 
 import pytest
-from pseudonymize_text.suggest import Candidate, format_candidates_csv, suggest_terms
 
 from pseudonymize_text.cli import main
 from pseudonymize_text.detectors.terms import TermRow, load_terms
 from pseudonymize_text.replacer import Span
+from pseudonymize_text.suggest import Candidate, format_candidates_csv, suggest_terms
 
 
 def _ner(text: str, type_: str = "name") -> Span:
