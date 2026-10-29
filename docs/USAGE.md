@@ -7,9 +7,22 @@
 ```text
 pseudonymize detect <in_dir>          [opts]   # report only; no writes to in/ or out/
 pseudonymize apply  <in_dir> <out_dir> [opts]  # detect (or load --plan) and write
+pseudonymize suggest-terms <in_dir> [opts]     # dry-run: NER candidate rows for terms.csv
 ```
 
 There is no implicit one-shot — `apply` is always the writing command. Use `detect` first when working with new data or new term lists.
+
+### `suggest-terms`
+
+Bootstraps a term list: runs the NER detector (requires the `[ner]` extra, see [ner-install.md](ner-install.md)) over `<in_dir>`. It prints `value,type,id,count` rows of PERSON / ORG / LOC candidates, deduped case-insensitively and ranked by frequency. Candidates an existing `--terms` list already matches are skipped. Review and curate the rows, then pass them as `--terms`. `load_terms` ignores the `count` column.
+
+| Flag | Default | Purpose |
+|---|---|---|
+| `--terms FILE` | — | Skip candidates this list already covers (literal or pattern). |
+| `--allow-broad-patterns` | off | As for `detect`/`apply`. |
+| `--out PATH` | stdout | Write the candidates CSV here (mode `0o600`). It holds plaintext entities, so keep it away from output, like a term list. |
+
+No key is needed. Nothing is applied, and no output tree, mapping, or report is written. Suggestions are bounded by NER recall: they are a starting point, not a complete list.
 
 ## Required Inputs
 
@@ -58,7 +71,7 @@ Detector coverage by jurisdiction (international / US / EU-planned) is tracked a
 
 ## Output on success
 
-Both subcommands print a one-line summary to **stderr** — e.g. `pseudonymize detect: 5 spans across 2 files — email:3 name:2`. It carries counts only (span totals by type and the number of affected files); it never includes span text, context, or tokens, so it is safe to log. `stdout` is unused.
+`detect` and `apply` print a one-line summary to **stderr** — e.g. `pseudonymize detect: 5 spans across 2 files — email:3 name:2`. It carries counts only (span totals by type and the number of affected files); it never includes span text, context, or tokens, so it is safe to log. `stdout` is unused.
 
 ## Exit Codes
 
