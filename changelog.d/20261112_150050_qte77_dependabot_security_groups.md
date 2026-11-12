@@ -1,0 +1,3 @@
+### Changed
+
+- `.github/dependabot.yml`: added `actions-security-updates` and `uv-security-updates` groups (`applies-to: security-updates`, patterns `"*"`) so security-fix PRs for each ecosystem land as one grouped PR instead of one PR per dependency, and a dedicated `github-codeql-action` group (patterns `github/codeql-action*`) ahead of the rest so its three call sites always move together, including on major bumps. The existing `actions-minor-patch` / `python-minor-patch` groups already did the version-updates job for their ecosystem — kept as-is (renaming would supersede any open PR using that group name), with `applies-to: version-updates` made explicit now that a security group sits alongside it.

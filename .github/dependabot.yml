@@ -9,7 +9,16 @@
 #
 # Grouping: minor + patch bumps land as one PR per ecosystem per week to
 # reduce PR sprawl. Major bumps stay separate so breaking changes get
-# their own review.
+# their own review. Security-update PRs are grouped per ecosystem too
+# (applies-to: security-updates), separately from version-update PRs,
+# so a critical fix (e.g. #14/certifi) lands as its own single PR instead
+# of one-per-dependency. "actions-minor-patch" and "python-minor-patch"
+# predate this split and already do the version-updates job described
+# above for their ecosystem — kept as-is (renaming would orphan/supersede
+# any open PR using that group name) with applies-to made explicit.
+# github-codeql-action is split out ahead of the rest since codeql.yaml
+# runs github/codeql-action and its init/autobuild/analyze steps must
+# always move together, including on major bumps.
 version: 2
 updates:
   - package-ecosystem: "uv"
@@ -22,7 +31,12 @@ updates:
       - "dependencies"
       - "python"
     groups:
+      uv-security-updates:
+        applies-to: "security-updates"
+        patterns:
+          - "*"
       python-minor-patch:
+        applies-to: "version-updates"
         update-types:
           - "minor"
           - "patch"
@@ -36,7 +50,15 @@ updates:
       - "dependencies"
       - "github-actions"
     groups:
+      github-codeql-action:
+        patterns:
+          - "github/codeql-action*"
+      actions-security-updates:
+        applies-to: "security-updates"
+        patterns:
+          - "*"
       actions-minor-patch:
+        applies-to: "version-updates"
         update-types:
           - "minor"
           - "patch"
