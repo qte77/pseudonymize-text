@@ -45,7 +45,7 @@ make changelog_new   # add a changelog fragment under changelog.d/
 
 - `feat/TOPIC`, `fix/TOPIC`, `docs/TOPIC`, `chore/TOPIC` — branch off `main`; never commit to `main` directly.
 - Squash-merge is default. Force-push only with `--force-with-lease`, never to `main`.
-- In this dev container, prefix `git`/`gh` with `env -u GH_TOKEN -u GITHUB_TOKEN` when a stale token shadows your `gh auth` credentials.
+- If a stale `GH_TOKEN`/`GITHUB_TOKEN` in your environment shadows your `gh auth` credentials, fix the environment (remove the stale variable) rather than working around it per command.
 
 ## CHANGELOG
 
@@ -65,7 +65,7 @@ by [scriv](https://scriv.readthedocs.io) from `changelog.d/` fragments.
    **syncs `uv.lock`**, collects fragments into `CHANGELOG.md`, and opens a `chore(release): bump …` PR.
 2. **Run the PR's checks.** It's bot-authored, so its checks idle at `action_required` until a
    real-user event — push any commit to the bump branch, or close + reopen the PR.
-3. **Merge on green**: `gh pr merge <n> --squash --admin --delete-branch`. **tag-release** then
+3. **Merge on green**: squash-merge and delete the branch. **tag-release** then
    fires on `main` and tags the merge commit `vX.Y.Z` (always reachable from `main`).
 4. Optionally run **publish-release** for a GitHub Release with notes from the `CHANGELOG.md`
    block. Tag-only is the default.
